@@ -144,8 +144,10 @@ export default function App() {
             />
 
             {/* Filters */}
+            {/* Filters */}
             <Card title="Filtres & Types d'instructions">
-              <div className="flex gap-2">
+              {/* J'ai mis ça en responsive : colonne sur mobile, ligne sur desktop */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button size="sm" variant="outline" className="flex-1 justify-center">Select by PC</Button>
                 <Button size="sm" variant="outline" className="flex-1 justify-center">Ajouter</Button>
               </div>
@@ -167,12 +169,14 @@ export default function App() {
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
                   <p className="text-xs text-gray-500 mb-2">Sur Memory range change</p>
-                  <div className="flex gap-2">
+                  {/* Pareil ici : je stack les boutons en vertical sur mobile */}
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button size="sm" variant="outline">Activer</Button>
                     <Input placeholder="min" className="h-8 text-xs flex-1" />
                   </div>
                 </div>
-                <div className="flex gap-4 text-xs text-gray-500">
+                {/* J'utilise flex-wrap pour que ça passe à la ligne si c'est trop serré */}
+                <div className="flex flex-wrap gap-4 text-xs text-gray-500">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" className="rounded border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800" /> Metacall
                   </label>
