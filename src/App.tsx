@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+import { cn } from "./ui-lib/utils/cn"; // Import cn utility
 import Button from "./ui-lib/components/Button";
 import Input from "./ui-lib/components/Input";
 import Card from "./ui-lib/components/Card";
@@ -17,6 +19,63 @@ export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
 
+  // --- Gestion des Breakpoints ---
+  type BreakpointType = "Storage" | "Transient" | "Memory";
+
+  interface Breakpoint {
+    id: string;
+    type: BreakpointType;
+    value: string;
+    min?: string;
+    max?: string;
+  }
+
+  const [breakpoints, setBreakpoints] = useState<Breakpoint[]>([]);
+  const [storageInput, setStorageInput] = useState("");
+  const [transientInput, setTransientInput] = useState("");
+  const [memoryMin, setMemoryMin] = useState<number>(0);
+  const [memoryMax, setMemoryMax] = useState<number>(32);
+  const [memoryRangeEnabled, setMemoryRangeEnabled] = useState(false);
+  const [metacall, setMetacall] = useState(false);
+  const [alias, setAlias] = useState(false);
+  const [skipContract, setSkipContract] = useState(false);
+
+  const addBreakpoint = (type: BreakpointType, inputValue: string, setInput: (v: string) => void) => {
+    if (!inputValue) return;
+    if (!/^0x[0-9a-fA-F]+$/.test(inputValue)) {
+      alert("Format invalide ! Doit commencer par 0x...");
+      return;
+    }
+    const newBp: Breakpoint = {
+      id: Date.now().toString() + Math.random().toString(),
+      type,
+      value: inputValue
+    };
+    setBreakpoints([...breakpoints, newBp]);
+    setInput("");
+  };
+
+  const toggleMemoryRange = () => {
+    const newState = !memoryRangeEnabled;
+    setMemoryRangeEnabled(newState);
+    if (newState) {
+      const newBp: Breakpoint = {
+        id: Date.now().toString() + Math.random().toString(),
+        type: "Memory",
+        value: `[${memoryMin};${memoryMax}]`,
+        min: memoryMin.toString(),
+        max: memoryMax.toString()
+      };
+      setBreakpoints([...breakpoints, newBp]);
+    } else {
+      setBreakpoints(breakpoints.filter(bp => bp.type !== "Memory"));
+    }
+  };
+
+  const removeBreakpoint = (id: string) => {
+    setBreakpoints(breakpoints.filter(bp => bp.id !== id));
+  };
+  // -----------------------------
 
   // Mock data for Memory View (données temporaires pour tester)  j'ai mis des données pour tester juste l'affichage en résultat 
   const mockMemorySegments: MemorySegment[] = [
@@ -167,37 +226,157 @@ export default function App() {
 
             {/* Breakpoints */}
             <Card title="Breakpoints">
-              <div className="space-y-3">
+              <div className="space-y-4">
+
+                {/* --- Zone d'affichage des breakpoints actifs --- */}
+                {breakpoints.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2 p-2 bg-white dark:bg-gray-950 rounded-lg border border-gray-100 dark:border-gray-800">
+                    {breakpoints.map(bp => (
+                      <span key={bp.id} className={
+                        cn("inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border",
+                          bp.type === "Storage" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800" :
+                            bp.type === "Transient" ? "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800" :
+                              "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800"
+                        )
+                      }>
+                        <span className="font-bold">{bp.type.charAt(0)}</span>
+                        {bp.value.substring(0, 6)}...{bp.value.substring(bp.value.length - 4)}
+                        <button onClick={() => removeBreakpoint(bp.id)} className="hover:text-red-500 rounded-full p-0.5">
+                          {/* Petite croix SVG interne */}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* --- Formulaires d'ajout --- */}
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
-                  <p className="text-xs text-gray-500 mb-2">Sur Storage slot change</p>
-                  <Button size="sm" variant="outline" className="mb-2">Activer</Button>
-                  <Input placeholder="Storage key (32 bytes hex)" className="h-8 text-xs" />
+                  <p className="text-xs text-gray-500 mb-2">Storage (32 bytes hex)</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="0x..."
+                      className="h-8 text-xs flex-1"
+                      value={storageInput}
+                      onChange={(e) => setStorageInput(e.target.value)}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addBreakpoint("Storage", storageInput, setStorageInput)}
+                    >
+                      +
+                    </Button>
+                  </div>
                 </div>
+
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
-                  <p className="text-xs text-gray-500 mb-2">Sur Transient storage slot change</p>
-                  <Button size="sm" variant="outline" className="mb-2">Activer</Button>
-                  <Input placeholder="Transient key (32 bytes hex)" className="h-8 text-xs" />
+                  <p className="text-xs text-gray-500 mb-2">Transient Storage</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="0x..."
+                      className="h-8 text-xs flex-1"
+                      value={transientInput}
+                      onChange={(e) => setTransientInput(e.target.value)}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addBreakpoint("Transient", transientInput, setTransientInput)}
+                    >
+                      +
+                    </Button>
+                  </div>
                 </div>
+
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
-                  <p className="text-xs text-gray-500 mb-2">Sur Memory range change</p>
-                  {/* Pareil ici : je stack avec flex-col sur mobile pour que ça rentre */}
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button size="sm" variant="outline">Activer</Button>
-                    <Input placeholder="min" className="h-8 text-xs flex-1" />
+                  <p className="text-xs text-gray-500 mb-2">Memory Range</p>
+
+                  {/* Interface avancée style Memory Range avec +/- */}
+                  <div className="flex flex-col gap-2">
+                    {/* Ligne de contrôle : Activer + Min + Max */}
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      <Button
+                        size="sm"
+                        // Style dynamique : bleu si activé, gris si désactivé
+                        className={memoryRangeEnabled
+                          ? "bg-blue-500 text-white border-blue-600 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                          : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+                        }
+                        onClick={toggleMemoryRange}
+                      >
+                        {memoryRangeEnabled ? "Activé" : "Activer"}
+                      </Button>
+
+                      {/* Min Stepper */}
+                      <div className="flex items-center rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
+                        <button
+                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-r border-gray-300 dark:border-gray-700 font-mono"
+                          onClick={() => setMemoryMin(Math.max(0, memoryMin - 1))}
+                        >-</button>
+                        <span className="px-2 text-xs font-mono text-gray-600 dark:text-gray-300 min-w-[60px] text-center">min : {memoryMin}</span>
+                        <button
+                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-l border-gray-300 dark:border-gray-700 font-mono"
+                          onClick={() => setMemoryMin(memoryMin + 1)}
+                        >+</button>
+                      </div>
+
+                      {/* Max Stepper */}
+                      <div className="flex items-center rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
+                        <button
+                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-r border-gray-300 dark:border-gray-700 font-mono"
+                          onClick={() => setMemoryMax(Math.max(memoryMin + 1, memoryMax - 1))}
+                        >-</button>
+                        <span className="px-2 text-xs font-mono text-gray-600 dark:text-gray-300 min-w-[60px] text-center">max : {memoryMax}</span>
+                        <button
+                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-l border-gray-300 dark:border-gray-700 font-mono"
+                          onClick={() => setMemoryMax(memoryMax + 1)}
+                        >+</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {/* J'utilise flex-wrap pour que ça passe à la ligne si c'est trop serré */}
-                <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800" /> Metacall
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="rounded border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800" /> Allias
-                  </label>
+                <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Metacall</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={metacall}
+                        onChange={(e) => setMetacall(e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Alias</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={alias}
+                        onChange={(e) => setAlias(e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Skip called contract</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={skipContract}
+                        onChange={(e) => setSkipContract(e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-gray-500">
-                  <input type="checkbox" className="rounded border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-800" /> Skip called contract
-                </label>
               </div>
             </Card>
 
