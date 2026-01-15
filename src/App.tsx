@@ -97,36 +97,53 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
       {/* ========== HEADER ========== */}
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-950/80 transition-colors duration-300">
-        <div className="flex items-center justify-between gap-4 px-6 py-3">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500">
-              <span className="text-lg font-bold text-white">A</span>
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/90 transition-all duration-300 shadow-sm">
+        <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-2 px-4 py-3 md:px-6">
+
+          {/* 1. partie Logo (j'utilise order-1 pour le garder à gauche) */}
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 order-1">
+            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-brand/20 shadow-lg">
+              <span className="text-lg md:text-xl font-bold text-white">A</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-900 dark:text-white">Apollo</span>
-              <span className="ml-2 text-gray-500">EVM Debugger</span>
+              <span className="font-bold text-gray-900 dark:text-white tracking-tight text-sm md:text-base">Apollo</span>
+              {/* Caché sur mobile pour éviter que ça fasse trop compréssé */}
+              <span className="hidden lg:inline-flex ml-2 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">Debugger</span>
             </div>
           </div>
 
-          {/* Search + Actions */}
-          <div className="flex flex-1 items-center gap-3 max-w-3xl">
-            <Input placeholder="Transaction hash..." className="flex-1" />
-            <Button variant="outline">Charger</Button>
-            <Button variant="outline">Charger depuis une URL</Button>
-            <Button variant="outline">Importer des fichiers</Button>
-            <div className="flex items-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-400">
-              <span className="h-2 w-2 rounded-full bg-orange-400"></span>
+          {/* 2. barre de recherche, bien mise en avant (avec order-2 et flex-1 ça s'adapte) */}
+          {/* Je la garde au milieu, sur mobile comme sur ordi */}
+          <div className="flex-1 min-w-0 order-2 md:flex-none md:w-150 mx-1 md:mx-2">
+            <Input
+              placeholder="Tx hash..."
+              className="w-full h-9 md:h-10 text-xs md:text-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-brand-500/20 transition-all rounded-xl"
+            />
+          </div>
+
+          {/* 3. Réglages / Thème - Aligné à droite (order-3 ou order-4 selon la taille) */}
+          <div className="flex items-center gap-1 flex-shrink-0 order-3 md:order-4">
+            <SettingsButton />
+            <ThemeToggle />
+          </div>
+
+          {/* 4. boutons d'action (qui défilent sur mobile grâce à overflow-x-auto) */}
+          {/* Sur mobile je les mets en bas (order-4), sur ordi je les remonte au milieu (order-3) */}
+          <div className="order-4 md:order-3 w-full md:w-auto md:flex-1 flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Charger</Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Charger URL</Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Importer</Button>
+
+            {/* Badge de Statut */}
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1 text-[10px] md:text-xs font-medium text-orange-500 whitespace-nowrap h-8">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+              </span>
               Prêt
             </div>
           </div>
 
-          {/* Theme Toggle & Settings */}
-          <div className="flex items-center gap-2">
-            <SettingsButton />
-            <ThemeToggle />
-          </div>
         </div>
       </header>
 
@@ -144,9 +161,8 @@ export default function App() {
             />
 
             {/* Filters */}
-            {/* Filters */}
             <Card title="Filtres & Types d'instructions">
-              {/* J'ai mis ça en responsive : colonne sur mobile, ligne sur desktop */}
+              {/* J'ai mis ça en responsive avec flex-col (mobile) et sm:flex-row (desktop) */}
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button size="sm" variant="outline" className="flex-1 justify-center">Select by PC</Button>
                 <Button size="sm" variant="outline" className="flex-1 justify-center">Ajouter</Button>
@@ -169,7 +185,7 @@ export default function App() {
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
                   <p className="text-xs text-gray-500 mb-2">Sur Memory range change</p>
-                  {/* Pareil ici : je stack les boutons en vertical sur mobile */}
+                  {/* Pareil ici : je stack avec flex-col sur mobile pour que ça rentre */}
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button size="sm" variant="outline">Activer</Button>
                     <Input placeholder="min" className="h-8 text-xs flex-1" />
