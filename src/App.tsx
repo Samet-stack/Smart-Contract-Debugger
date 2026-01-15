@@ -11,10 +11,12 @@ import TxInstrsView from "./features/tx/TxInstrsView";
 import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
+import InstructionFilters from "./features/filters/InstructionFilters"; // Nouveau composant Feature
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
+
 
   // Mock data for Memory View (données temporaires pour tester)  j'ai mis des données pour tester juste l'affichage en résultat 
   const mockMemorySegments: MemorySegment[] = [
@@ -113,7 +115,7 @@ export default function App() {
           </div>
 
           {/* 2. barre de recherche, bien mise en avant (avec order-2 et flex-1 ça s'adapte) */}
-          {/* Je la garde au milieu, sur mobile comme sur ordi */}
+          {/* on la garde au milieu, sur mobile comme sur ordi */}
           <div className="flex-1 min-w-0 order-2 md:flex-none md:w-150 mx-1 md:mx-2">
             <Input
               placeholder="Tx hash..."
@@ -128,7 +130,7 @@ export default function App() {
           </div>
 
           {/* 4. boutons d'action (qui défilent sur mobile grâce à overflow-x-auto) */}
-          {/* Sur mobile je les mets en bas (order-4), sur ordi je les remonte au milieu (order-3) */}
+          {/* Sur mobile on les mets en bas (order-4), sur ordi on les remonte au milieu (order-3) */}
           <div className="order-4 md:order-3 w-full md:w-auto md:flex-1 flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
             <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Charger</Button>
             <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Charger URL</Button>
@@ -161,14 +163,7 @@ export default function App() {
             />
 
             {/* Filters */}
-            <Card title="Filtres & Types d'instructions">
-              {/* J'ai mis ça en responsive avec flex-col (mobile) et sm:flex-row (desktop) */}
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button size="sm" variant="outline" className="flex-1 justify-center">Select by PC</Button>
-                <Button size="sm" variant="outline" className="flex-1 justify-center">Ajouter</Button>
-              </div>
-              <Button size="sm" variant="outline" className="mt-2 w-full justify-center">Effacer</Button>
-            </Card>
+            <InstructionFilters />
 
             {/* Breakpoints */}
             <Card title="Breakpoints">
