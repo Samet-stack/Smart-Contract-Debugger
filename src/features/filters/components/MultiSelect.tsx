@@ -21,6 +21,7 @@ interface MultiSelectProps {
   className?: string;
   label?: string;
   allowCustom?: boolean;
+  validateCustomValue?: (value: string) => boolean; // Fonction de validation optionnelle
 }
 
 export default function MultiSelect({
@@ -31,6 +32,7 @@ export default function MultiSelect({
   className,
   label,
   allowCustom = false, // Pour autoriser à taper un texte perso (comme un PC)
+  validateCustomValue, // Fonction de validation
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -101,6 +103,12 @@ export default function MultiSelect({
         toggleOption(filteredOptions[highlightedIndex]);
       } else if (query && allowCustom) {
         // Sinon, si c'est autorisé, on ajoute la valeur custom
+        // Si une fonction de validation est fournie, on l'utilise
+        if (validateCustomValue && !validateCustomValue(query)) {
+          // Si c'est pas valide, on ne fait rien (ou on pourrait afficher une erreur)
+          return;
+        }
+
         // Si c'est autorisé (allowCustom), j'ajoute ce que l'utilisateur a tapé
         if (!selected.includes(query)) {
           onChange([...selected, query]);

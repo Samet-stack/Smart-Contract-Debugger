@@ -20,6 +20,9 @@ const OPCODES = [
 export default function InstructionFilters() {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
+  // Fonction pour vérifier si c'est une valeur hexadécimale valide (0x...)
+  const isValidHex = (val: string) => /^0x[0-9a-fA-F]+$/.test(val);
+
   return (
     <Card title="Filtres & Types d'instructions">
       {/* Menu MultiSelect comme sur l'ancienne version, mais avec le thème actuel */}
@@ -33,6 +36,7 @@ export default function InstructionFilters() {
           selected={selectedFilters}
           onChange={setSelectedFilters}
           allowCustom={true}
+          validateCustomValue={isValidHex} // On oblige à ce que ce soit un format Hex (0x123)
           className="w-full"
         />
       </div>
