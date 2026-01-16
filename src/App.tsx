@@ -6,7 +6,9 @@ import ThemeToggle from "./ui-lib/components/ThemeToggle";
 import SettingsButton from "./ui-lib/components/SettingsButton";
 import RangeInput from "./ui-lib/components/RangeInput";
 import MemoryView from "./features/memory/MemoryView";
+import StackView from "./features/stack/StackView";
 import type { MemorySegment } from "./types/MemorySegment";
+import type { StackItem } from "./types/StackItem";
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
@@ -21,6 +23,21 @@ export default function App() {
     { offset: 160, value: "00000a00000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1198, opcode: "MSTORE" } },
     { offset: 192, value: "000000e0800028ab20253eada6d85fceceeea5cd3f659281410347b7e6381de6", modifiedAt: { pc: 1202, opcode: "MSTORE" } },
     { offset: 224, value: "5afa210680000000000000000000a03155acd9f75915fcc21d34035f440da7", modifiedAt: { pc: 1208, opcode: "CALLDATACOPY" } },
+  ];
+
+  // Mock data for Stack View (exemple d'instruction SHL)
+  // SHL consomme 2 éléments (shift, value) et produit 1 élément (result)
+  const mockStackItems: StackItem[] = [
+    // Éléments CONSOMMÉS par l'instruction (fond rouge)
+    { value: "0x00000000000000000000000000000000000000000000000000000000000000ff", label: "shift", status: "consumed" },
+    { value: "0x0000000000000000000000000000000000000000000000000000000000000001", label: "value", status: "consumed" },
+    // Élément PRODUIT par l'instruction (fond vert)
+    { value: "0x8000000000000000000000000000000000000000000000000000000000000000", label: "result", status: "produced", modifiedAt: { pc: 1117, opcode: "SHL" } },
+    // Éléments NEUTRES (pas affectés)
+    { value: "0x000000000000000000000000000000000000000000000000000000000000e0", status: "neutral", modifiedAt: { pc: 1073, opcode: "SWAP1" } },
+    { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 1073, opcode: "SWAP1" } },
+    { value: "0x0000000000000000000000000000000000000000000000000000000000000300", status: "neutral", modifiedAt: { pc: 759, opcode: "PUSH2" } },
+    { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 758, opcode: "CALLDATALOAD" } },
   ];
 
   return (
@@ -196,12 +213,7 @@ export default function App() {
           <div className="col-span-12 xl:col-span-4 space-y-4">
             {/* Stack */}
             <Card title="Stack">
-              <div className="h-32 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-3 font-mono text-xs text-green-600 dark:text-green-400">
-                <div>00: 0x00</div>
-                <div>01: 0x60</div>
-                <div>02: 0x40</div>
-                <div>03: 0x89</div>
-              </div>
+              <StackView items={mockStackItems} className="max-h-64" />
             </Card>
 
             {/* Memory */}
