@@ -1,6 +1,6 @@
 // MemoryView.tsx   
 // Ce composant affiche les segments mémoire de l'EVM sous forme de tableau.
-// Chaque ligne montre : Offset (position), Value (valeur hex), et l'instruction
+// Each line shows: Offset (position), Value (hex), and the instruction
 // DÉPENDANCES :
 //   - Table (de ui-lib) : Composant tableau réutilisable
 //   - MemorySegment (type) : Structure des données mémoire
@@ -17,10 +17,10 @@ interface MemoryViewProps {
 export default function MemoryView({ segments, className = "" }: MemoryViewProps) {
 
     return (
-        // Conteneur avec scroll horizontal si la table est trop large
+        // Container with scroll if table is too wide
         <div className={`overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}>
             <Table>
-                {/* EN-TÊTE DU TABLEAU - 3 colonnes */}
+                {/* TABLE HEADER - 3 columns */}
                 <TableHeader>
                     <TableRow>
                         <TableCell isHeader>Offset</TableCell>
@@ -29,7 +29,7 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
                     </TableRow>
                 </TableHeader>
 
-                {/* CORPS DU TABLEAU - Une ligne par segment mémoire */}
+                {/* TABLE BODY - One line per memory segment */}
                 <TableBody>
                     {segments.map((segment) => (
                         <TableRow key={segment.offset}>
@@ -56,7 +56,7 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
                     {segments.length === 0 && (
                         <TableRow>
                             <TableCell className="text-center text-gray-500 italic" colSpan={3}>
-                                Aucun segment mémoire à afficher
+                                No memory segments to display
                             </TableCell>
                         </TableRow>
                     )}

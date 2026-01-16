@@ -135,7 +135,7 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
         <div className={`rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${className}`}>
             {/* Header avec Gas */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">TX_INSTRS</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">INSTRUCTIONS</h3>
                 <div className="flex items-center gap-6 text-sm font-mono">
                     <div>
                         <span className="text-gray-500">Our gas:</span>
@@ -150,8 +150,8 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
 
             {/* Content - Scroll interne */}
             <div className="px-5 divide-y divide-gray-100 dark:divide-gray-800 max-h-[500px] overflow-y-auto">
-                <InstructionBlock title="LAST_RUN_INSTR" instr={data.lastRunInstr} />
-                <InstructionBlock title="NEXT_INSTR_TO_RUN" instr={data.nextInstrToRun} />
+                <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} />
+                <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} />
             </div>
         </div>
     );

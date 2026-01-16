@@ -19,7 +19,7 @@ export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
 
-  // --- Gestion des Breakpoints ---
+  // --- Breakpoints Management ---
   type BreakpointType = "Storage" | "Transient" | "Memory";
 
   interface Breakpoint {
@@ -43,7 +43,7 @@ export default function App() {
   const addBreakpoint = (type: BreakpointType, inputValue: string, setInput: (v: string) => void) => {
     if (!inputValue) return;
     if (!/^0x[0-9a-fA-F]+$/.test(inputValue)) {
-      alert("Format invalide ! Doit commencer par 0x...");
+      alert("Invalid format! Must start with 0x...");
       return;
     }
     const newBp: Breakpoint = {
@@ -77,7 +77,7 @@ export default function App() {
   };
   // -----------------------------
 
-  // Mock data for Memory View (données temporaires pour tester)  j'ai mis des données pour tester juste l'affichage en résultat 
+  // Mock data for Memory View (temporary data for testing) 
   const mockMemorySegments: MemorySegment[] = [
     { offset: 0, value: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de", modifiedAt: { pc: 1139, opcode: "MSTORE" } },
     { offset: 32, value: "22264a61000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1146, opcode: "MSTORE" } },
@@ -92,19 +92,19 @@ export default function App() {
   // Mock data for Stack View (exemple d'instruction SHL)
   // SHL consomme 2 éléments (shift, value) et produit 1 élément (result)
   const mockStackItems: StackItem[] = [
-    // Éléments CONSOMMÉS par l'instruction (fond rouge)
+    // Items CONSUMED by instruction (red background)
     { value: "0x00000000000000000000000000000000000000000000000000000000000000ff", label: "shift", status: "consumed" },
     { value: "0x0000000000000000000000000000000000000000000000000000000000000001", label: "value", status: "consumed" },
-    // Élément PRODUIT par l'instruction (fond vert)
+    // Item PRODUCED by instruction (green background)
     { value: "0x8000000000000000000000000000000000000000000000000000000000000000", label: "result", status: "produced", modifiedAt: { pc: 1117, opcode: "SHL" } },
-    // Éléments NEUTRES (pas affectés)
+    // NEUTRAL items (not affected)
     { value: "0x000000000000000000000000000000000000000000000000000000000000e0", status: "neutral", modifiedAt: { pc: 1073, opcode: "SWAP1" } },
     { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 1073, opcode: "SWAP1" } },
     { value: "0x0000000000000000000000000000000000000000000000000000000000000300", status: "neutral", modifiedAt: { pc: 759, opcode: "PUSH2" } },
     { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 758, opcode: "CALLDATALOAD" } },
   ];
 
-  // Mock data for TX_INSTRS (données réalistes du vrai Apollo que j'ai exécute)
+  // Mock data for Instruction Execution (realistic data from real Apollo execution)
   const mockTxInstrs: TxInstrs = {
     ourGas: 2880,
     theirGas: 618,
@@ -161,7 +161,7 @@ export default function App() {
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/90 transition-all duration-300 shadow-sm">
         <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-2 px-4 py-3 md:px-6">
 
-          {/* 1. partie Logo (j'utilise order-1 pour le garder à gauche) */}
+          {/* 1. Logo section (using order-1 to keep it left) */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 order-1">
             <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-brand/20 shadow-lg">
               <span className="text-lg md:text-xl font-bold text-white">A</span>
@@ -173,7 +173,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* 2. barre de recherche, bien mise en avant (avec order-2 et flex-1 ça s'adapte) */}
+          {/* 2. Search bar, prominent (with order-2 and flex-1 it adapts) */}
           {/* on la garde au milieu, sur mobile comme sur ordi */}
           <div className="flex-1 min-w-0 order-2 md:flex-none md:w-150 mx-1 md:mx-2">
             <Input
@@ -188,20 +188,20 @@ export default function App() {
             <ThemeToggle />
           </div>
 
-          {/* 4. boutons d'action (qui défilent sur mobile grâce à overflow-x-auto) */}
+          {/* 4. Action buttons (scrollable on mobile) */}
           {/* Sur mobile on les mets en bas (order-4), sur ordi on les remonte au milieu (order-3) */}
           <div className="order-4 md:order-3 w-full md:w-auto md:flex-1 flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Charger</Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Charger URL</Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Importer</Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Load</Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Load URL</Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Import</Button>
 
-            {/* Badge de Statut */}
+            {/* Status Badge */}
             <div className="flex items-center justify-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1 text-[10px] md:text-xs font-medium text-orange-500 whitespace-nowrap h-8">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
               </span>
-              Prêt
+              Ready
             </div>
           </div>
 
@@ -228,7 +228,7 @@ export default function App() {
             <Card title="Breakpoints">
               <div className="space-y-4">
 
-                {/* --- Zone d'affichage des breakpoints actifs --- */}
+                {/* --- Active Breakpoints Display Area --- */}
                 {breakpoints.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2 p-2 bg-white dark:bg-gray-950 rounded-lg border border-gray-100 dark:border-gray-800">
                     {breakpoints.map(bp => (
@@ -250,7 +250,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* --- Formulaires d'ajout --- */}
+                {/* --- Add Forms --- */}
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
                   <p className="text-xs text-gray-500 mb-2">Storage (32 bytes hex)</p>
                   <div className="flex gap-2">
@@ -305,7 +305,7 @@ export default function App() {
                         }
                         onClick={toggleMemoryRange}
                       >
-                        {memoryRangeEnabled ? "Activé" : "Activer"}
+                        {memoryRangeEnabled ? "Enabled" : "Enable"}
                       </Button>
 
                       {/* Min Stepper */}
@@ -381,9 +381,9 @@ export default function App() {
             </Card>
 
             {/* Coverage */}
-            <Card title="Couverture">
+            <Card title="Coverage">
               <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 px-3 py-2">
-                <span className="text-xs text-gray-500">PC couverts</span>
+                <span className="text-xs text-gray-500">Covered PCs</span>
                 <span className="font-mono text-xs text-gray-700 dark:text-gray-300">0 / 0</span>
               </div>
             </Card>
@@ -392,10 +392,10 @@ export default function App() {
           {/* ===== CENTER COLUMN (5/12) ===== */}
           <div className="col-span-12 xl:col-span-5 space-y-4">
             {/* Opcodes - EN HAUT */}
-            <Card title="Contrat & OpCodes" className="h-[400px] flex flex-col">
+            <Card title="Contract & OpCodes" className="h-[400px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-4 font-mono text-sm leading-relaxed">
-                <div className="text-gray-600">/* Les opcodes apparaitront ici. */</div>
-                <div className="text-gray-600">// Exemple</div>
+                <div className="text-gray-600">/* Opcodes will appear here. */</div>
+                <div className="text-gray-600">// Example</div>
                 <div className="text-blue-400">0000 PUSH1 0x60</div>
                 <div className="text-blue-400">0002 PUSH1 0x40</div>
                 <div className="text-yellow-400">0004 MSTORE</div>
@@ -450,7 +450,7 @@ export default function App() {
 
         {/* Footer Info */}
         <div className="mt-6 text-center text-xs text-gray-600">
-          Raccourcis: Space Run/Pause • ←/→ Step • A/D Auto
+          Shortcuts: Space Run/Pause • ←/→ Step • A/D Auto
         </div>
       </main>
     </div>

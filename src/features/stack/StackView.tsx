@@ -67,7 +67,7 @@ export default function StackView({ items, className = "" }: StackViewProps) {
                     {items.length === 0 && (
                         <TableRow>
                             <TableCell className="text-center text-gray-500 italic" colSpan={2}>
-                                Stack vide
+                                Empty Stack
                             </TableCell>
                         </TableRow>
                     )}

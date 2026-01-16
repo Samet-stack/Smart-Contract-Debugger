@@ -4,8 +4,8 @@ import Button from "../../ui-lib/components/Button";
 import MultiSelect from "./components/MultiSelect";
 
 const OPCODES = [
-  // J'ai mis ici tous les codes possibles (ADD, SUB, etc.)
-  // Si tu veux en ajouter un, tu le rajoutes juste dans cette liste
+  // I listed all possible opcodes here (ADD, SUB, etc.)
+  // If you want to add one, just add it to this list
   "STOP", "ADD", "MUL", "SUB", "DIV", "SDIV", "MOD", "SMOD", "ADDMOD", "MULMOD", "EXP", "SIGNEXTEND",
   "LT", "GT", "SLT", "SGT", "EQ", "ISZERO", "AND", "OR", "XOR", "NOT", "BYTE", "SHL", "SHR", "SAR",
   "SHA3", "ADDRESS", "BALANCE", "ORIGIN", "CALLER", "CALLVALUE", "CALLDATALOAD", "CALLDATASIZE", "CALLDATACOPY",
@@ -20,15 +20,15 @@ const OPCODES = [
 export default function InstructionFilters() {
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
-  // Fonction pour vérifier si c'est une valeur hexadécimale valide (0x...)
+  // Function to verify if valid hex value (0x...)
   const isValidHex = (val: string) => /^0x[0-9a-fA-F]+$/.test(val);
 
   return (
-    <Card title="Filtres & Types d'instructions">
-      {/* Menu MultiSelect comme sur l'ancienne version, mais avec le thème actuel */}
+    <Card title="Filters & Instruction Types">
+      {/* MultiSelect menu like in old version, but with current theme */}
       <div className="w-full">
-        {/* J'utilise mon composant MultiSelect ici */}
-        {/* allowCustom={true} permet de taper un code hex (PC) à la main */}
+        {/* I use my MultiSelect component here */}
+        {/* allowCustom={true} allows typing hex code (PC) manually */}
         <MultiSelect
           label="Select instructions types or PC :"
           placeholder="Type opcode or PC..."
@@ -36,13 +36,13 @@ export default function InstructionFilters() {
           selected={selectedFilters}
           onChange={setSelectedFilters}
           allowCustom={true}
-          validateCustomValue={isValidHex} // On oblige à ce que ce soit un format Hex (0x123)
+          validateCustomValue={isValidHex} // Enforcing Hex format (0x123)
           className="w-full"
         />
       </div>
-      {/* Bouton Effacer optionnel, mais MultiSelect permet de supprimer les tags un par un. Je le garde si besoin de tout clear d'un coup. */}
+      {/* Clear button optional, but MultiSelect allows removing tags one by one. Keeping it if need to clear all at once. */}
       {selectedFilters.length > 0 && (
-        <Button size="sm" variant="outline" className="mt-2 w-full justify-center" onClick={() => setSelectedFilters([])}>Effacer</Button>
+        <Button size="sm" variant="outline" className="mt-2 w-full justify-center" onClick={() => setSelectedFilters([])}>Clear</Button>
       )}
     </Card>
   );

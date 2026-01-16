@@ -1,5 +1,5 @@
 // ExecutionPanel.tsx
-// Panneau d'exécution avec boutons texte + icônes lisibles
+// Execution Panel with text buttons + readable icons
 
 import { useState } from "react";
 
@@ -74,15 +74,15 @@ export default function ExecutionPanel({
             <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
                 <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Exécution</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
                 <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                    {isPlaying ? "▶ EN COURS" : "⏸ PAUSE"}
+                    {isPlaying ? "▶ RUNNING" : "⏸ PAUSED"}
                 </span>
             </div>
 
             <div className="p-4 space-y-4">
-                {/* Ligne 1 : Boutons de contrôle principaux */}
+                {/* Row 1: Main Control Buttons */}
                 <div className="flex flex-wrap gap-2">
                     {/* Auto-Prev */}
                     <button className={secondaryBtnClass} title="Auto-Prev">
@@ -91,7 +91,7 @@ export default function ExecutionPanel({
                     </button>
 
                     {/* Prev */}
-                    <button className={secondaryBtnClass} title="Instruction précédente">
+                    <button className={secondaryBtnClass} title="Previous Instruction">
                         <ChevronLeftIcon />
                         <span>Prev</span>
                     </button>
@@ -113,7 +113,7 @@ export default function ExecutionPanel({
                     </button>
 
                     {/* Next */}
-                    <button className={secondaryBtnClass} title="Instruction suivante">
+                    <button className={secondaryBtnClass} title="Next Instruction">
                         <span>Next</span>
                         <ChevronRightIcon />
                     </button>
@@ -125,10 +125,10 @@ export default function ExecutionPanel({
                     </button>
                 </div>
 
-                {/* Ligne 2 : Vitesse */}
+                {/* Row 2: Speed */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Vitesse d'exécution</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Execution Speed</span>
                         <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{speed}</span>
                             <span className="text-xs text-gray-500">%</span>
@@ -148,21 +148,21 @@ export default function ExecutionPanel({
                         />
                         <div className="flex justify-between mt-1.5">
                             <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                🐢 Lent
+                                🐢 Slow
                             </span>
                             <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                Rapide 🚀
+                                Fast 🚀
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Ligne 3 : Taille du Pas - Même style que le reste */}
+                {/* Row 3: Step Size */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center justify-between">
                         <div>
-                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Taille du pas</span>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Nombre d'instructions par step</p>
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Step Size</span>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Instructions per step</p>
                         </div>
 
                         {/* Stepper control stylé */}

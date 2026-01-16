@@ -21,7 +21,7 @@ interface MultiSelectProps {
   className?: string;
   label?: string;
   allowCustom?: boolean;
-  validateCustomValue?: (value: string) => boolean; // Fonction de validation optionnelle
+  validateCustomValue?: (value: string) => boolean; // Optional validation function
 }
 
 export default function MultiSelect({
@@ -31,27 +31,27 @@ export default function MultiSelect({
   placeholder = "Select...",
   className,
   label,
-  allowCustom = false, // Pour autoriser à taper un texte perso (comme un PC)
-  validateCustomValue, // Fonction de validation
+  allowCustom = false, // To allow typing custom text (like PC)
+  validateCustomValue, // Validation function
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [highlightedIndex, setHighlightedIndex] = useState(0); // Pour savoir quel élément est surligné au clavier
+  const [highlightedIndex, setHighlightedIndex] = useState(0); // To track highlighted element index
   const containerRef = useRef<HTMLDivElement>(null);
-  const optionsListRef = useRef<HTMLDivElement>(null); // Ref pour le conteneur scrollable
-  const optionRefs = useRef<(HTMLDivElement | null)[]>([]); // Refs pour chaque option
+  const optionsListRef = useRef<HTMLDivElement>(null); // Ref for scrollable container
+  const optionRefs = useRef<(HTMLDivElement | null)[]>([]); // Refs for each option
 
-  // Je calcule les options filtrées ici pour pouvoir les utiliser dans la navigation clavier
+  // Computing filtered options here for keyboard navigation
   const filteredOptions = options.filter(opt =>
     opt.toLowerCase().includes(query.toLowerCase())
   );
 
-  // Reset de l'index quand on cherche
+  // Reset index on search
   useEffect(() => {
     setHighlightedIndex(0);
   }, [query]);
 
-  // Scroll automatique quand l'index change
+  // Auto-scroll when index changes
   useEffect(() => {
     if (isOpen && optionRefs.current[highlightedIndex]) {
       optionRefs.current[highlightedIndex]?.scrollIntoView({
@@ -60,12 +60,12 @@ export default function MultiSelect({
     }
   }, [highlightedIndex, isOpen]);
 
-  // Reset des refs quand la liste change (filtrage)
+  // Reset refs when list changes (filtering)
   useEffect(() => {
     optionRefs.current = optionRefs.current.slice(0, filteredOptions.length);
   }, [filteredOptions]);
 
-  // fermer le menu si on clique en dehors
+  // Close menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -86,7 +86,7 @@ export default function MultiSelect({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Navigation avec les flèches
+    // Arrow key navigation
     if (e.key === "ArrowDown") {
       e.preventDefault();
       // On descend dans la liste (sans dépasser la fin)
@@ -99,24 +99,24 @@ export default function MultiSelect({
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (isOpen && filteredOptions.length > 0) {
-        // Si le menu est ouvert, on sélectionne l'élément surligné
+        // If menu is open, select highlighted item
         toggleOption(filteredOptions[highlightedIndex]);
       } else if (query && allowCustom) {
-        // Sinon, si c'est autorisé, on ajoute la valeur custom
-        // Si une fonction de validation est fournie, on l'utilise
+        // Else if allowed, add custom value
+        // If validation function provided, use it
         if (validateCustomValue && !validateCustomValue(query)) {
-          // Si c'est pas valide, on ne fait rien (ou on pourrait afficher une erreur)
+          // If invalid, do nothing (or show error)
           return;
         }
 
-        // Si c'est autorisé (allowCustom), j'ajoute ce que l'utilisateur a tapé
+        // If allowed (allowCustom), add typed value
         if (!selected.includes(query)) {
           onChange([...selected, query]);
         }
         setQuery("");
       }
     } else if (e.key === "Backspace" && !query && selected.length > 0) {
-      // Si on fait "Retour" et que c'est vide, j'enlève le dernier tag
+      // If Backspace and empty, remove last tag
       onChange(selected.slice(0, -1));
     }
   };
@@ -129,7 +129,7 @@ export default function MultiSelect({
   // const filteredOptions = options.filter(opt =>
   //   opt.toLowerCase().includes(query.toLowerCase())
   // ); 
-  // Déplacé en haut pour être accessible dans handleKeyDown
+  // Moved up to be accessible in handleKeyDown
 
   return (
     <div className={cn("relative w-full", className)} ref={containerRef}>
@@ -188,18 +188,18 @@ export default function MultiSelect({
               return (
                 <div
                   key={option}
-                  ref={(el) => (optionRefs.current[index] = el)} // On attache la ref ici
+                  ref={(el) => { if (el) optionRefs.current[index] = el }} // Attach ref here
                   className={cn(
                     "flex items-center justify-between rounded px-2 py-1.5 text-xs cursor-pointer",
                     isSelected
                       ? "bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300"
                       : "text-gray-700 dark:text-gray-300",
-                    // Ajout du style pour l'élément surligné au clavier
+                    // Style for keyboard highlighted element
                     index === highlightedIndex && !isSelected ? "bg-gray-100 dark:bg-gray-800" : "",
                     !isSelected && "hover:bg-gray-100 dark:hover:bg-gray-800"
                   )}
                   onClick={() => toggleOption(option)}
-                  onMouseEnter={() => setHighlightedIndex(index)} // Pour que la souris mette aussi à jour l'index
+                  onMouseEnter={() => setHighlightedIndex(index)} // Mouse updates index too
                 >
                   <span className="font-medium font-mono">{option}</span>
                   {isSelected && <IconCheck className="h-3.5 w-3.5" />}
