@@ -4,7 +4,7 @@ import Input from "./ui-lib/components/Input";
 import Card from "./ui-lib/components/Card";
 import ThemeToggle from "./ui-lib/components/ThemeToggle";
 import SettingsButton from "./ui-lib/components/SettingsButton";
-import RangeInput from "./ui-lib/components/RangeInput";
+import ExecutionPanel from "./features/execution/ExecutionPanel";
 import MemoryView from "./features/memory/MemoryView";
 import StackView from "./features/stack/StackView";
 import TxInstrsView from "./features/tx/TxInstrsView";
@@ -14,6 +14,7 @@ import type { TxInstrs } from "./types/TxInstrs";
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
+  const [stepSize, setStepSize] = useState(1);
 
   // Mock data for Memory View (données temporaires pour tester)  j'ai mis des données pour tester juste l'affichage en résultat 
   const mockMemorySegments: MemorySegment[] = [
@@ -134,32 +135,13 @@ export default function App() {
         <div className="grid grid-cols-12 gap-6">
           {/* ===== LEFT COLUMN (3/12) ===== */}
           <div className="col-span-12 xl:col-span-3 space-y-4">
-            {/* Execution */}
-            <Card title="Exécution">
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Button size="sm" variant="success">Run</Button>
-                <Button size="sm" variant="outline">Prev</Button>
-                <Button size="sm" variant="outline">Next</Button>
-                <Button size="sm" variant="outline">Auto-Prev</Button>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Auto-Next</p>
-                  <Button size="sm" variant="outline" className="w-full justify-center">Auto-Next</Button>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Auto-play speed</p>
-                  <RangeInput value={speed} onChange={setSpeed} />
-                </div>
-                <div className="flex justify-between items-center text-xs text-gray-500">
-                  <span>{speed}%</span>
-                  <div className="flex items-center gap-2">
-                    <span>Step size</span>
-                    <input type="number" defaultValue="1" className="w-12 rounded border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-2 py-1 text-center text-xs text-gray-700 dark:text-gray-300" />
-                  </div>
-                </div>
-              </div>
-            </Card>
+            {/* Execution - Modern Panel */}
+            <ExecutionPanel
+              speed={speed}
+              onSpeedChange={setSpeed}
+              stepSize={stepSize}
+              onStepSizeChange={setStepSize}
+            />
 
             {/* Filters */}
             <Card title="Filtres & Types d'instructions">
