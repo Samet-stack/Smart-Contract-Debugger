@@ -7,8 +7,10 @@ import SettingsButton from "./ui-lib/components/SettingsButton";
 import RangeInput from "./ui-lib/components/RangeInput";
 import MemoryView from "./features/memory/MemoryView";
 import StackView from "./features/stack/StackView";
+import TxInstrsView from "./features/tx/TxInstrsView";
 import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
+import type { TxInstrs } from "./types/TxInstrs";
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
@@ -39,6 +41,57 @@ export default function App() {
     { value: "0x0000000000000000000000000000000000000000000000000000000000000300", status: "neutral", modifiedAt: { pc: 759, opcode: "PUSH2" } },
     { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 758, opcode: "CALLDATALOAD" } },
   ];
+
+  // Mock data for TX_INSTRS (données réalistes du vrai Apollo que j'ai exécute)
+  const mockTxInstrs: TxInstrs = {
+    ourGas: 2880,
+    theirGas: 618,
+    lastRunInstr: {
+      number: 267,
+      total: 15701,
+      pc: 2368,
+      opcode: "MSTORE",
+      functionSelector: "swap(address,bool,int256,uint160,bytes)",
+      callData: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de22264a6100000000000000000000000000000000000000000001000000000000000000000010c866840000000000000000000000000000000000000001000276a4000000000000000000000000000000000000000a00000000000000000000000000000000000000e0800028ab20253eada6d85fceceeea5cd3f659281410347b7e6381de65afa21068000000000000000000a03155acd9f75915fcc21d34035f440da7040bd3ba08800000019501",
+      gas: 159198,
+      gasCost: 3,
+      depth: 2,
+      memoryMappings: [
+        { range: "[0;4]", pc: 1139, opcode: "MSTORE" },
+        { range: "[4;36]", pc: 1146, opcode: "MSTORE" },
+        { range: "[36;68]", pc: 1154, opcode: "MSTORE" },
+        { range: "[68;100]", pc: 1193, opcode: "MSTORE" },
+        { range: "[100;132]", pc: 1184, opcode: "MSTORE" },
+        { range: "[132;164]", pc: 1198, opcode: "MSTORE" },
+        { range: "[164;196]", pc: 1202, opcode: "MSTORE" },
+        { range: "[196;420]", pc: 1208, opcode: "CALLDATACOPY" },
+      ],
+      memoryChanges: [{ offset: 64, size: 32 }],
+      lastConditionalJump: { pc: 2308, opcode: "JUMPI", condition: "10c86684" },
+    },
+    nextInstrToRun: {
+      number: 268,
+      total: 15701,
+      pc: 2369,
+      opcode: "PUSH1",
+      functionSelector: "swap(address,bool,int256,uint160,bytes)",
+      callData: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de22264a6100000000000000000000000000000000000000000001000000000000000000000010c866840000000000000000000000000000000000000001000276a4000000000000000000000000000000000000000a00000000000000000000000000000",
+      gas: 159195,
+      gasCost: 3,
+      depth: 2,
+      memoryMappings: [
+        { range: "[0;4]", pc: 1139, opcode: "MSTORE" },
+        { range: "[4;36]", pc: 1146, opcode: "MSTORE" },
+        { range: "[36;68]", pc: 1154, opcode: "MSTORE" },
+        { range: "[68;100]", pc: 1193, opcode: "MSTORE" },
+        { range: "[100;132]", pc: 1184, opcode: "MSTORE" },
+        { range: "[132;164]", pc: 1198, opcode: "MSTORE" },
+        { range: "[164;196]", pc: 1202, opcode: "MSTORE" },
+        { range: "[196;420]", pc: 1208, opcode: "CALLDATACOPY" },
+      ],
+      lastConditionalJump: { pc: 2308, opcode: "JUMPI", condition: "10c86684" },
+    },
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
@@ -162,8 +215,8 @@ export default function App() {
 
           {/* ===== CENTER COLUMN (5/12) ===== */}
           <div className="col-span-12 xl:col-span-5 space-y-4">
-            {/* Opcodes */}
-            <Card title="Contrat & OpCodes" className="h-[500px] flex flex-col">
+            {/* Opcodes - EN HAUT */}
+            <Card title="Contrat & OpCodes" className="h-[400px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-4 font-mono text-sm leading-relaxed">
                 <div className="text-gray-600">/* Les opcodes apparaitront ici. */</div>
                 <div className="text-gray-600">// Exemple</div>
@@ -179,34 +232,15 @@ export default function App() {
               </div>
             </Card>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* TX INSTRS */}
-              <Card title="TX_INSTRS">
-                <div className="space-y-2 font-mono text-xs">
-                  <div className="flex justify-between border-b border-gray-200 dark:border-gray-800 pb-1">
-                    <span className="text-gray-500">Our gas</span>
-                    <span className="text-gray-700 dark:text-gray-300">0</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-800 pb-1">
-                    <span className="text-gray-500">Their gas</span>
-                    <span className="text-gray-300">0</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-800 pb-1">
-                    <span className="text-gray-500">Last run instr</span>
-                    <span className="text-gray-700 dark:text-gray-300">None</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Next instr to run</span>
-                    <span className="text-gray-300">None</span>
-                  </div>
-                </div>
-              </Card>
+            {/* TX_INSTRS - EN DESSOUS */}
+            <TxInstrsView data={mockTxInstrs} />
 
-              {/* Console */}
-              <Card title="Console">
-                <div className="h-28 rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950"></div>
-              </Card>
-            </div>
+            {/* Console */}
+            <Card title="Console">
+              <div className="h-32 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-3 font-mono text-xs text-gray-500">
+                <div className="text-gray-400">&gt; Waiting for transaction...</div>
+              </div>
+            </Card>
           </div>
 
           {/* ===== RIGHT COLUMN (4/12) ===== */}
