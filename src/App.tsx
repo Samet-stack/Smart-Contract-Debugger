@@ -5,9 +5,23 @@ import Card from "./ui-lib/components/Card";
 import ThemeToggle from "./ui-lib/components/ThemeToggle";
 import SettingsButton from "./ui-lib/components/SettingsButton";
 import RangeInput from "./ui-lib/components/RangeInput";
+import MemoryView from "./features/memory/MemoryView";
+import type { MemorySegment } from "./types/MemorySegment";
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
+
+  // Mock data for Memory View (données temporaires pour tester)  j'ai mis des données pour tester juste l'affichage en résultat 
+  const mockMemorySegments: MemorySegment[] = [
+    { offset: 0, value: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de", modifiedAt: { pc: 1139, opcode: "MSTORE" } },
+    { offset: 32, value: "22264a61000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1146, opcode: "MSTORE" } },
+    { offset: 64, value: "0000000100000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1154, opcode: "MSTORE" } },
+    { offset: 96, value: "10c866840000000000000000000000000000000000000000000000000000001", modifiedAt: { pc: 1193, opcode: "MSTORE" } },
+    { offset: 128, value: "000276a4000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1184, opcode: "MSTORE" } },
+    { offset: 160, value: "00000a00000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1198, opcode: "MSTORE" } },
+    { offset: 192, value: "000000e0800028ab20253eada6d85fceceeea5cd3f659281410347b7e6381de6", modifiedAt: { pc: 1202, opcode: "MSTORE" } },
+    { offset: 224, value: "5afa210680000000000000000000a03155acd9f75915fcc21d34035f440da7", modifiedAt: { pc: 1208, opcode: "CALLDATACOPY" } },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
@@ -192,10 +206,7 @@ export default function App() {
 
             {/* Memory */}
             <Card title="Memory">
-              <div className="h-32 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-3 font-mono text-xs text-gray-700 dark:text-gray-300">
-                <div className="mb-1"><span className="text-gray-600">0x0000:</span> 60 40 52 34 15 00 00</div>
-                <div><span className="text-gray-600">0x0010:</span> ab cd ef 01 23 45 67 89</div>
-              </div>
+              <MemoryView segments={mockMemorySegments} className="max-h-64" />
             </Card>
 
             {/* Transient Storage */}
