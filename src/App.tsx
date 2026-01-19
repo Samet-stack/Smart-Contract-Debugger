@@ -14,12 +14,16 @@ import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
 import InstructionFilters from "./features/filters/InstructionFilters"; // Nouveau composant Feature
-import SettingsView from "./features/settings/SettingsView";
+import SettingsMenu, { type SettingsTab } from "./features/settings/SettingsMenu";
+import SettingsModals from "./features/settings/SettingsModals";
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
-  const [currentView, setCurrentView] = useState<"debugger" | "settings">("debugger");
+
+  // Settings State
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab | null>(null);
 
   // --- Breakpoints Management ---
   type BreakpointType = "Storage" | "Transient" | "Memory";
@@ -157,14 +161,12 @@ export default function App() {
     },
   };
 
-  if (currentView === "settings") {
-    return <SettingsView onBack={() => setCurrentView("debugger")} />;
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
       {/* ========== HEADER ========== */}
-      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-950/90 transition-all duration-300 shadow-sm">
+      <header className="sticky top-0 z-50 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 shadow-sm">
         <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-2 px-4 py-3 md:px-6">
 
           {/* 1. Logo section (using order-1 to keep it left) */}
@@ -189,9 +191,22 @@ export default function App() {
           </div>
 
           {/* 3. Réglages / Thème - Aligné à droite (order-3 ou order-4 selon la taille) */}
-          <div className="flex items-center gap-1 flex-shrink-0 order-3 md:order-4">
-            <SettingsButton onClick={() => setCurrentView("settings")} />
+          <div className="flex items-center gap-1 flex-shrink-0 order-3 md:order-4 relative">
+            <SettingsButton onClick={() => setSettingsMenuOpen(!settingsMenuOpen)} />
+            {settingsMenuOpen && (
+              <SettingsMenu
+                onSelect={(tab) => {
+                  setActiveSettingsTab(tab);
+                  setSettingsMenuOpen(false);
+                }}
+                onClose={() => setSettingsMenuOpen(false)}
+              />
+            )}
             <ThemeToggle />
+            <SettingsModals
+              activeTab={activeSettingsTab}
+              onClose={() => setActiveSettingsTab(null)}
+            />
           </div>
 
           {/* 4. Action buttons (scrollable on mobile) */}
