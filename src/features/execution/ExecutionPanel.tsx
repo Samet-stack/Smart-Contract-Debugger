@@ -185,10 +185,10 @@ export default function ExecutionPanel({
                         </div>
 
                         {/* Stepper control stylé */}
-                        <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-xl p-1 shadow-inner border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-lg p-0.5 shadow-inner border border-gray-200 dark:border-gray-700">
                             <button
                                 onClick={() => onStepSizeChange(Math.max(1, stepSize - 1))}
-                                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-lg"
+                                className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-sm"
                             >
                                 −
                             </button>
@@ -196,12 +196,12 @@ export default function ExecutionPanel({
                                 type="number"
                                 value={stepSize}
                                 onChange={(e) => onStepSizeChange(Math.max(1, Number(e.target.value)))}
-                                className="w-14 h-8 text-center text-lg font-bold text-gray-700 dark:text-gray-300 bg-transparent border-0 focus:outline-none focus:ring-0"
+                                className="w-10 h-6 text-center text-sm font-bold text-gray-700 dark:text-gray-300 bg-transparent border-0 focus:outline-none focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none hover:appearance-none"
                                 min="1"
                             />
                             <button
                                 onClick={() => onStepSizeChange(stepSize + 1)}
-                                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-lg"
+                                className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-sm"
                             >
                                 +
                             </button>

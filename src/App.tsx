@@ -17,11 +17,14 @@ import InstructionFilters from "./features/filters/InstructionFilters"; // Nouve
 import SettingsMenu, { type SettingsTab } from "./features/settings/SettingsMenu";
 import SettingsModals from "./features/settings/SettingsModals";
 
+import ConsoleModal from "./features/console/ConsoleModal"; // Import ConsoleModal
+
 export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
 
-  // Settings State
+  // ... (rest of state)
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab | null>(null);
 
@@ -212,6 +215,16 @@ export default function App() {
           {/* 4. Action buttons (scrollable on mobile) */}
           {/* Sur mobile on les mets en bas (order-4), sur ordi on les remonte au milieu (order-3) */}
           <div className="order-4 md:order-3 w-full md:w-auto md:flex-1 flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
+            {/* Console Trigger */}
+            <button
+              onClick={() => setIsConsoleOpen(true)}
+              className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors mr-1"
+              title="Open Console"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
             <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Load</Button>
             <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Load URL</Button>
             <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Import</Button>
@@ -314,43 +327,50 @@ export default function App() {
                   <p className="text-xs text-gray-500 mb-2">Memory Range</p>
 
                   {/* Interface avancée style Memory Range avec +/- */}
+                  {/* Interface avancée style Memory Range avec +/- */}
                   <div className="flex flex-col gap-2">
-                    {/* Ligne de contrôle : Activer + Min + Max */}
-                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                      <Button
-                        size="sm"
-                        // Style dynamique : bleu si activé, gris si désactivé
-                        className={memoryRangeEnabled
-                          ? "bg-blue-500 text-white border-blue-600 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                          : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
-                        }
-                        onClick={toggleMemoryRange}
-                      >
-                        {memoryRangeEnabled ? "Enabled" : "Enable"}
-                      </Button>
+                    {/* Enable Button - Full Width */}
+                    <Button
+                      size="sm"
+                      className={cn("w-full justify-center", memoryRangeEnabled
+                        ? "bg-blue-500 text-white border-blue-600 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                        : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+                      )}
+                      onClick={toggleMemoryRange}
+                    >
+                      {memoryRangeEnabled ? "Range Enabled" : "Enable Range"}
+                    </Button>
 
+                    {/* Min / Max Row */}
+                    <div className="grid grid-cols-2 gap-2">
                       {/* Min Stepper */}
-                      <div className="flex items-center rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
+                      <div className="flex items-center justify-between rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-1">
                         <button
-                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-r border-gray-300 dark:border-gray-700 font-mono"
+                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
                           onClick={() => setMemoryMin(Math.max(0, memoryMin - 1))}
-                        >-</button>
-                        <span className="px-2 text-xs font-mono text-gray-600 dark:text-gray-300 min-w-[60px] text-center">min : {memoryMin}</span>
+                        >−</button>
+                        <div className="flex flex-col items-center leading-none">
+                          <span className="text-[10px] text-gray-400">min</span>
+                          <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{memoryMin}</span>
+                        </div>
                         <button
-                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-l border-gray-300 dark:border-gray-700 font-mono"
+                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
                           onClick={() => setMemoryMin(memoryMin + 1)}
                         >+</button>
                       </div>
 
                       {/* Max Stepper */}
-                      <div className="flex items-center rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900">
+                      <div className="flex items-center justify-between rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-1">
                         <button
-                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-r border-gray-300 dark:border-gray-700 font-mono"
+                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
                           onClick={() => setMemoryMax(Math.max(memoryMin + 1, memoryMax - 1))}
-                        >-</button>
-                        <span className="px-2 text-xs font-mono text-gray-600 dark:text-gray-300 min-w-[60px] text-center">max : {memoryMax}</span>
+                        >−</button>
+                        <div className="flex flex-col items-center leading-none">
+                          <span className="text-[10px] text-gray-400">max</span>
+                          <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{memoryMax}</span>
+                        </div>
                         <button
-                          className="px-2 py-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-l border-gray-300 dark:border-gray-700 font-mono"
+                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
                           onClick={() => setMemoryMax(memoryMax + 1)}
                         >+</button>
                       </div>
@@ -410,11 +430,11 @@ export default function App() {
             </Card>
           </div>
 
-          {/* ===== CENTER COLUMN (5/12) ===== */}
-          <div className="col-span-12 xl:col-span-5 space-y-4">
+          {/* ===== CENTER COLUMN (4/12) - Reduced width to optimize space ===== */}
+          <div className="col-span-12 xl:col-span-4 space-y-4">
             {/* Opcodes - EN HAUT */}
-            <Card title="Contract & OpCodes" className="h-[400px] flex flex-col">
-              <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-4 font-mono text-sm leading-relaxed">
+            <Card title="Contract & OpCodes" className="h-[320px] flex flex-col">
+              <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
                 <div className="text-gray-600">/* Opcodes will appear here. */</div>
                 <div className="text-gray-600">// Example</div>
                 <div className="text-blue-400">0000 PUSH1 0x60</div>
@@ -431,17 +451,10 @@ export default function App() {
 
             {/* TX_INSTRS - EN DESSOUS */}
             <TxInstrsView data={mockTxInstrs} />
-
-            {/* Console */}
-            <Card title="Console">
-              <div className="h-32 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-3 font-mono text-xs text-gray-500">
-                <div className="text-gray-400">&gt; Waiting for transaction...</div>
-              </div>
-            </Card>
           </div>
 
-          {/* ===== RIGHT COLUMN (4/12) ===== */}
-          <div className="col-span-12 xl:col-span-4 space-y-4">
+          {/* ===== RIGHT COLUMN (5/12) - Increased width for Stack/Memory ===== */}
+          <div className="col-span-12 xl:col-span-5 space-y-4">
             {/* Stack */}
             <Card title="Stack">
               <StackView items={mockStackItems} className="max-h-64" />
@@ -474,6 +487,11 @@ export default function App() {
           Shortcuts: Space Run/Pause • ←/→ Step • A/D Auto
         </div>
       </main>
+
+      <ConsoleModal
+        isOpen={isConsoleOpen}
+        onClose={() => setIsConsoleOpen(false)}
+      />
     </div>
   );
 }
