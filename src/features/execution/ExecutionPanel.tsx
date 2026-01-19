@@ -2,6 +2,7 @@
 // Execution Panel with text buttons + readable icons
 
 import { useState } from "react";
+import Tooltip from "../../ui-lib/components/Tooltip";
 
 interface ExecutionPanelProps {
     speed: number;
@@ -70,63 +71,81 @@ export default function ExecutionPanel({
 
     return (
         <div className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm ${className}`}>
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="flex items-center gap-2">
+            {/* Header with Compact Controls */}
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 gap-4">
+                <div className="flex items-center gap-2 shrink-0">
                     <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
-                <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                    {isPlaying ? "▶ RUNNING" : "⏸ PAUSED"}
-                </span>
+
+                {/* Compact Control Group */}
+                <div className="flex items-center gap-3">
+
+                    {/* Left Group: Backwards */}
+                    <div className="inline-flex rounded-lg shadow-sm">
+                        <Tooltip content="Auto-Previous">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 text-gray-600 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                onClick={() => {/* logic for auto-prev */ }} // Needs handler
+                                title="" // Remove native title to use Tooltip
+                            >
+                                <RewindIcon />
+                            </button>
+                        </Tooltip>
+                        <Tooltip content="Previous Instruction">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 -ml-px text-gray-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                title=""
+                            >
+                                <ChevronLeftIcon />
+                            </button>
+                        </Tooltip>
+                    </div>
+
+                    {/* Middle: Play/Pause */}
+                    <Tooltip content={isPlaying ? "Pause Execution" : "Right Continuous Execution"}>
+                        <button
+                            onClick={() => setIsPlaying(!isPlaying)}
+                            className={`
+                                flex items-center justify-center w-8 h-8 rounded-lg shadow-md transition-all
+                                ${isPlaying
+                                    ? 'bg-orange-500 text-white hover:bg-orange-600 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-gray-900'
+                                    : 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900'
+                                }
+                            `}
+                        >
+                            {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                        </button>
+                    </Tooltip>
+
+                    {/* Right Group: Forwards */}
+                    <div className="inline-flex rounded-lg shadow-sm">
+                        <Tooltip content="Next Instruction">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 text-gray-600 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                title="" // Remove native title
+                            >
+                                <ChevronRightIcon />
+                            </button>
+                        </Tooltip>
+                        <Tooltip content="Auto-Next">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 -ml-px text-gray-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                onClick={() => {/* logic for auto-next */ }} // Needs handler
+                                title=""
+                            >
+                                <FastForwardIcon />
+                            </button>
+                        </Tooltip>
+                    </div>
+                </div>
             </div>
 
             <div className="p-4 space-y-4">
-                {/* Row 1: Main Control Buttons */}
-                <div className="flex flex-wrap gap-2">
-                    {/* Auto-Prev */}
-                    <button className={secondaryBtnClass} title="Auto-Prev">
-                        <RewindIcon />
-                        <span>Auto-Prev</span>
-                    </button>
-
-                    {/* Prev */}
-                    <button className={secondaryBtnClass} title="Previous Instruction">
-                        <ChevronLeftIcon />
-                        <span>Prev</span>
-                    </button>
-
-                    {/* RUN / PAUSE - Bouton principal */}
-                    <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
-              transition-all duration-200 shadow-md hover:shadow-lg
-              ${isPlaying
-                                ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-                            }
-            `}
-                    >
-                        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                        <span>{isPlaying ? 'Pause' : 'Run'}</span>
-                    </button>
-
-                    {/* Next */}
-                    <button className={secondaryBtnClass} title="Next Instruction">
-                        <span>Next</span>
-                        <ChevronRightIcon />
-                    </button>
-
-                    {/* Auto-Next */}
-                    <button className={secondaryBtnClass} title="Auto-Next">
-                        <span>Auto-Next</span>
-                        <FastForwardIcon />
-                    </button>
-                </div>
+                {/* Controls moved to header */}
 
                 {/* Row 2: Speed */}
-                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 space-y-2">
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-2">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Execution Speed</span>
                         <div className="flex items-center gap-2">
@@ -158,7 +177,7 @@ export default function ExecutionPanel({
                 </div>
 
                 {/* Row 3: Step Size */}
-                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center justify-between">
                         <div>
                             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Step Size</span>
