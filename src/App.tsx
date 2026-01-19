@@ -14,10 +14,12 @@ import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
 import InstructionFilters from "./features/filters/InstructionFilters"; // Nouveau composant Feature
+import SettingsView from "./features/settings/SettingsView";
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
+  const [currentView, setCurrentView] = useState<"debugger" | "settings">("debugger");
 
   // --- Breakpoints Management ---
   type BreakpointType = "Storage" | "Transient" | "Memory";
@@ -155,6 +157,10 @@ export default function App() {
     },
   };
 
+  if (currentView === "settings") {
+    return <SettingsView onBack={() => setCurrentView("debugger")} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
       {/* ========== HEADER ========== */}
@@ -184,7 +190,7 @@ export default function App() {
 
           {/* 3. Réglages / Thème - Aligné à droite (order-3 ou order-4 selon la taille) */}
           <div className="flex items-center gap-1 flex-shrink-0 order-3 md:order-4">
-            <SettingsButton />
+            <SettingsButton onClick={() => setCurrentView("settings")} />
             <ThemeToggle />
           </div>
 
