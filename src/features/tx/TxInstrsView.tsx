@@ -8,7 +8,7 @@ import type { TxInstrs, InstructionInfo } from "../../types/TxInstrs";
 
 interface TxInstrsViewProps {
     data: TxInstrs;
-    className?: string;
+    className?: string; // className is kept but usually not needed for border anymore
 }
 
 // Sous-composant pour une ligne label: valeur
@@ -22,20 +22,23 @@ function InfoRow({ label, value, valueColor = "text-gray-700 dark:text-gray-200"
 }
 
 // Sous-composant pour afficher une instruction (LAST_RUN ou NEXT)
+// Modifié pour enlever les bordures externes et s'intégrer dans la "Grande Case"
 function InstructionBlock({ title, instr }: { title: string; instr: InstructionInfo | null }) {
     if (!instr) {
         return (
-            <div className="py-4">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{title}</h4>
-                <p className="text-gray-600 italic text-sm">None</p>
+            <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{title}</h4>
+                <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-4 border border-dashed border-gray-200 dark:border-gray-800">
+                    <p className="text-gray-500 italic text-sm text-center">None</p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="py-4">
+        <div>
             {/* Titre de la section */}
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">{title}</h4>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{title}</h4>
 
             {/* Infos principales sur fond sombre */}
             <div className="rounded-lg bg-gray-100 dark:bg-gray-800/50 p-4 space-y-2">
@@ -74,11 +77,9 @@ function InstructionBlock({ title, instr }: { title: string; instr: InstructionI
                 )}
             </div>
 
-
-
             {/* Memory Changes */}
             {instr.memoryChanges && instr.memoryChanges.length > 0 && (
-                <div className="mt-4">
+                <div className="mt-4 px-1">
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Memory Changes</p>
                     <div className="flex flex-wrap gap-2">
                         {instr.memoryChanges.map((mc, i) => (
@@ -92,7 +93,7 @@ function InstructionBlock({ title, instr }: { title: string; instr: InstructionI
 
             {/* Last Conditional Jump */}
             {instr.lastConditionalJump && (
-                <div className="mt-4">
+                <div className="mt-4 px-1">
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Last Conditional Jump</p>
                     <div className="flex items-center gap-2 text-xs font-mono">
                         <Badge color="error" variant="light">JUMPI</Badge>
@@ -108,27 +109,31 @@ function InstructionBlock({ title, instr }: { title: string; instr: InstructionI
 
 export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps) {
     return (
-        <div className={`rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${className}`}>
-            {/* Header avec Gas */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">INSTRUCTIONS</h3>
-                <div className="flex items-center gap-6 text-sm font-mono">
-                    <div>
-                        <span className="text-gray-500">Our gas:</span>
-                        <span className="ml-2 text-green-400 font-semibold">{data.ourGas.toLocaleString()}</span>
+        <div className={`${className} space-y-6`}>
+            {/* Header avec Gas - Intégré en haut du contenu */}
+            <div className="flex items-center justify-between px-1">
+                {/* Petit label discrêt ou vide si on a déjà le titre de la Card */}
+                <span className="text-xs font-medium text-gray-400">Execution Context</span>
+
+                <div className="flex items-center gap-4 text-xs font-mono">
+                    <div className="bg-green-500/10 text-green-600 dark:text-green-400 px-2 py-0.5 rounded border border-green-500/20">
+                        Our gas: <span className="font-semibold ml-1">{data.ourGas.toLocaleString()}</span>
                     </div>
-                    <div>
-                        <span className="text-gray-500">Their gas:</span>
-                        <span className="ml-2 text-red-400 font-semibold">{data.theirGas.toLocaleString()}</span>
+                    <div className="bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded border border-red-500/20">
+                        Their gas: <span className="font-semibold ml-1">{data.theirGas.toLocaleString()}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Content - Scroll interne */}
-            <div className="px-5 divide-y divide-gray-100 dark:divide-gray-800 max-h-[800px] overflow-y-auto">
-                <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} />
-                <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} />
-            </div>
+            {/* Separator discret sous le header gas */}
+            {/* <div className="border-t border-gray-100 dark:border-gray-800" /> */}
+
+            <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} />
+
+            {/* Separator entre Last et Next */}
+            <div className="border-t border-gray-100 dark:border-gray-800" />
+
+            <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} />
         </div>
     );
 }
