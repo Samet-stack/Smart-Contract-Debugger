@@ -1,7 +1,8 @@
 // ExecutionPanel.tsx
-// Panneau d'exécution avec boutons texte + icônes lisibles
+// Execution Panel with text buttons + readable icons
 
 import { useState } from "react";
+import Tooltip from "../../ui-lib/components/Tooltip";
 
 interface ExecutionPanelProps {
     speed: number;
@@ -70,65 +71,83 @@ export default function ExecutionPanel({
 
     return (
         <div className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm ${className}`}>
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="flex items-center gap-2">
+            {/* Header with Compact Controls */}
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 gap-4">
+                <div className="flex items-center gap-2 shrink-0">
                     <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Exécution</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
-                <span className="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                    {isPlaying ? "▶ EN COURS" : "⏸ PAUSE"}
-                </span>
+
+                {/* Compact Control Group */}
+                <div className="flex items-center gap-3">
+
+                    {/* Left Group: Backwards */}
+                    <div className="inline-flex rounded-lg shadow-sm">
+                        <Tooltip content="Auto-Previous">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 text-gray-600 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                onClick={() => {/* logic for auto-prev */ }} // Needs handler
+                                title="" // Remove native title to use Tooltip
+                            >
+                                <RewindIcon />
+                            </button>
+                        </Tooltip>
+                        <Tooltip content="Previous Instruction">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 -ml-px text-gray-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                title=""
+                            >
+                                <ChevronLeftIcon />
+                            </button>
+                        </Tooltip>
+                    </div>
+
+                    {/* Middle: Play/Pause */}
+                    <Tooltip content={isPlaying ? "Pause Execution" : "Right Continuous Execution"}>
+                        <button
+                            onClick={() => setIsPlaying(!isPlaying)}
+                            className={`
+                                flex items-center justify-center w-8 h-8 rounded-lg shadow-md transition-all
+                                ${isPlaying
+                                    ? 'bg-orange-500 text-white hover:bg-orange-600 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-gray-900'
+                                    : 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900'
+                                }
+                            `}
+                        >
+                            {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                        </button>
+                    </Tooltip>
+
+                    {/* Right Group: Forwards */}
+                    <div className="inline-flex rounded-lg shadow-sm">
+                        <Tooltip content="Next Instruction">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 text-gray-600 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                title="" // Remove native title
+                            >
+                                <ChevronRightIcon />
+                            </button>
+                        </Tooltip>
+                        <Tooltip content="Auto-Next">
+                            <button
+                                className="inline-flex items-center justify-center px-2 py-1.5 -ml-px text-gray-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+                                onClick={() => {/* logic for auto-next */ }} // Needs handler
+                                title=""
+                            >
+                                <FastForwardIcon />
+                            </button>
+                        </Tooltip>
+                    </div>
+                </div>
             </div>
 
             <div className="p-4 space-y-4">
-                {/* Ligne 1 : Boutons de contrôle principaux */}
-                <div className="flex flex-wrap gap-2">
-                    {/* Auto-Prev */}
-                    <button className={secondaryBtnClass} title="Auto-Prev">
-                        <RewindIcon />
-                        <span>Auto-Prev</span>
-                    </button>
+                {/* Controls moved to header */}
 
-                    {/* Prev */}
-                    <button className={secondaryBtnClass} title="Instruction précédente">
-                        <ChevronLeftIcon />
-                        <span>Prev</span>
-                    </button>
-
-                    {/* RUN / PAUSE - Bouton principal */}
-                    <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
-              transition-all duration-200 shadow-md hover:shadow-lg
-              ${isPlaying
-                                ? 'bg-orange-500 hover:bg-orange-600 text-white'
-                                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-                            }
-            `}
-                    >
-                        {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                        <span>{isPlaying ? 'Pause' : 'Run'}</span>
-                    </button>
-
-                    {/* Next */}
-                    <button className={secondaryBtnClass} title="Instruction suivante">
-                        <span>Next</span>
-                        <ChevronRightIcon />
-                    </button>
-
-                    {/* Auto-Next */}
-                    <button className={secondaryBtnClass} title="Auto-Next">
-                        <span>Auto-Next</span>
-                        <FastForwardIcon />
-                    </button>
-                </div>
-
-                {/* Ligne 2 : Vitesse */}
-                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 space-y-2">
+                {/* Row 2: Speed */}
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Vitesse d'exécution</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Execution Speed</span>
                         <div className="flex items-center gap-2">
                             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{speed}</span>
                             <span className="text-xs text-gray-500">%</span>
@@ -148,28 +167,28 @@ export default function ExecutionPanel({
                         />
                         <div className="flex justify-between mt-1.5">
                             <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                🐢 Lent
+                                🐢 Slow
                             </span>
                             <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                Rapide 🚀
+                                Fast 🚀
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Ligne 3 : Taille du Pas - Même style que le reste */}
-                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                {/* Row 3: Step Size */}
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center justify-between">
                         <div>
-                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Taille du pas</span>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Nombre d'instructions par step</p>
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Step Size</span>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Instructions per step</p>
                         </div>
 
                         {/* Stepper control stylé */}
-                        <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-xl p-1 shadow-inner border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-lg p-0.5 shadow-inner border border-gray-200 dark:border-gray-700">
                             <button
                                 onClick={() => onStepSizeChange(Math.max(1, stepSize - 1))}
-                                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-lg"
+                                className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-sm"
                             >
                                 −
                             </button>
@@ -177,12 +196,12 @@ export default function ExecutionPanel({
                                 type="number"
                                 value={stepSize}
                                 onChange={(e) => onStepSizeChange(Math.max(1, Number(e.target.value)))}
-                                className="w-14 h-8 text-center text-lg font-bold text-gray-700 dark:text-gray-300 bg-transparent border-0 focus:outline-none focus:ring-0"
+                                className="w-10 h-6 text-center text-sm font-bold text-gray-700 dark:text-gray-300 bg-transparent border-0 focus:outline-none focus:ring-0 [&::-webkit-inner-spin-button]:appearance-none hover:appearance-none"
                                 min="1"
                             />
                             <button
                                 onClick={() => onStepSizeChange(stepSize + 1)}
-                                className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-lg"
+                                className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-sm"
                             >
                                 +
                             </button>

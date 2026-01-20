@@ -18,7 +18,7 @@ export default function Card({ title, children, className = "" }: CardProps) {
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</h3>
             </div>
-            <div className="p-4">{children}</div>
+            <div className="flex-1 min-h-0 flex flex-col p-4">{children}</div>
         </div>
     );
 }
