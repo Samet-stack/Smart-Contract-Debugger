@@ -47,7 +47,8 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
                             {/* Colonne 3 : Instruction qui a modifié ce segment */}
                             {/* Affiche le Program Counter (PC) et l'Opcode (MSTORE, etc.) */}
                             <TableCell className="text-green-600 dark:text-green-400">
-                                PC={segment.modifiedAt.pc} | {segment.modifiedAt.opcode}
+                                <span className="mr-3 font-mono">{segment.modifiedAt.pc}</span>
+                                {segment.modifiedAt.opcode}
                             </TableCell>
                         </TableRow>
                     ))}

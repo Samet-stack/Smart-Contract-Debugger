@@ -24,11 +24,11 @@ export default function App() {
   const [stepSize, setStepSize] = useState(1);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
 
-  // ... (rest of state)
+
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab | null>(null);
 
-  // --- Breakpoints Management ---
+
   type BreakpointType = "Storage" | "Transient" | "Memory";
 
   interface Breakpoint {
@@ -84,7 +84,7 @@ export default function App() {
   const removeBreakpoint = (id: string) => {
     setBreakpoints(breakpoints.filter(bp => bp.id !== id));
   };
-  // -----------------------------
+
 
   // Mock data for Memory View (temporary data for testing) 
   const mockMemorySegments: MemorySegment[] = [
@@ -430,8 +430,8 @@ export default function App() {
             </Card>
           </div>
 
-          {/* ===== CENTER COLUMN (4/12) - Reduced width to optimize space ===== */}
-          <div className="col-span-12 xl:col-span-4 space-y-4">
+          {/* ===== CENTER COLUMN (3/12) - Further reduced width (25%) ===== */}
+          <div className="col-span-12 xl:col-span-3 space-y-4">
             {/* Opcodes - EN HAUT */}
             <Card title="Contract & OpCodes" className="h-[320px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
@@ -453,8 +453,8 @@ export default function App() {
             <TxInstrsView data={mockTxInstrs} />
           </div>
 
-          {/* ===== RIGHT COLUMN (5/12) - Increased width for Stack/Memory ===== */}
-          <div className="col-span-12 xl:col-span-5 space-y-4">
+          {/* ===== RIGHT COLUMN (6/12) - Increased width for Stack/Memory ===== */}
+          <div className="col-span-12 xl:col-span-6 space-y-4">
             {/* Stack */}
             <Card title="Stack">
               <StackView items={mockStackItems} className="max-h-64" />
