@@ -74,31 +74,7 @@ function InstructionBlock({ title, instr }: { title: string; instr: InstructionI
                 )}
             </div>
 
-            {/* Memory Mappings - Style amélioré */}
-            {instr.memoryMappings && instr.memoryMappings.length > 0 && (
-                <div className="mt-4">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Memory Mappings</p>
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                        {instr.memoryMappings.map((m, i) => (
-                            <div
-                                key={i}
-                                className={`flex items-center justify-between px-3 py-2 text-xs font-mono ${i % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800/30' : 'bg-gray-100 dark:bg-gray-800/50'
-                                    }`}
-                            >
-                                <span className="text-gray-700 dark:text-gray-400">{m.range}</span>
-                                <span className="text-gray-600">=&gt;</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-500">[ PC = {m.pc}</span>
-                                    <span className="text-gray-500">|</span>
-                                    <span className="text-gray-400">OP =</span>
-                                    <Badge color="info" size="sm">{m.opcode}</Badge>
-                                    <span className="text-gray-500">]</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+
 
             {/* Memory Changes */}
             {instr.memoryChanges && instr.memoryChanges.length > 0 && (
@@ -149,7 +125,7 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
             </div>
 
             {/* Content - Scroll interne */}
-            <div className="px-5 divide-y divide-gray-100 dark:divide-gray-800 max-h-[500px] overflow-y-auto">
+            <div className="px-5 divide-y divide-gray-100 dark:divide-gray-800 max-h-[800px] overflow-y-auto">
                 <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} />
                 <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} />
             </div>

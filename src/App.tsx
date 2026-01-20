@@ -18,6 +18,7 @@ import SettingsMenu, { type SettingsTab } from "./features/settings/SettingsMenu
 import SettingsModals from "./features/settings/SettingsModals";
 
 import ConsoleModal from "./features/console/ConsoleModal"; // Import ConsoleModal
+import MemoryMappingsView from "./features/memory/MemoryMappingsView"; // Import MemoryMappingsView
 
 export default function App() {
   const [speed, setSpeed] = useState(40);
@@ -430,21 +431,47 @@ export default function App() {
             </Card>
           </div>
 
-          {/* ===== CENTER COLUMN (3/12) - Further reduced width (25%) ===== */}
-          <div className="col-span-12 xl:col-span-3 space-y-4">
+          {/* ===== CENTER COLUMN (4/12) - REDUCED SLIGHTLY ===== */}
+          <div className="col-span-12 xl:col-span-4 space-y-4">
             {/* Opcodes - EN HAUT */}
-            <Card title="Contract & OpCodes" className="h-[320px] flex flex-col">
+            <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
                 <div className="text-gray-600">/* Opcodes will appear here. */</div>
-                <div className="text-gray-600">// Example</div>
-                <div className="text-blue-400">0000 PUSH1 0x60</div>
+                <div className="text-blue-400">0000 PUSH1 0x80</div>
                 <div className="text-blue-400">0002 PUSH1 0x40</div>
                 <div className="text-yellow-400">0004 MSTORE</div>
                 <div className="text-blue-400">0005 CALLVALUE</div>
                 <div className="text-purple-400">0006 DUP1</div>
                 <div className="text-green-400">0007 ISZERO</div>
-                <div className="text-red-400">0008 JUMPI</div>
-                <div className="text-blue-400">0009 JUMPDEST</div>
+                <div className="text-blue-400">0008 PUSH2 0x0010</div>
+                <div className="text-red-400">000B JUMPI</div>
+                <div className="text-blue-400">000C PUSH1 0x00</div>
+                <div className="text-purple-400">000E DUP1</div>
+                <div className="text-red-400">000F REVERT</div>
+                <div className="text-blue-400">0010 JUMPDEST</div>
+                <div className="text-purple-400">0011 POP</div>
+                <div className="text-blue-400">0012 PUSH1 0x04</div>
+                <div className="text-purple-400">0014 CALLDATASIZE</div>
+                <div className="text-gray-400">0015 LT</div>
+                <div className="text-blue-400">0016 PUSH2 0x0036</div>
+                <div className="text-red-400">0019 JUMPI</div>
+                <div className="text-blue-400">001A PUSH1 0x00</div>
+                <div className="text-purple-400">001C CALLDATALOAD</div>
+                <div className="text-blue-400">001D PUSH1 0xe0</div>
+                <div className="text-gray-400">001F SHR</div>
+                <div className="text-purple-400">0020 DUP1</div>
+                <div className="text-blue-400">0021 PUSH4 0x10c86684</div>
+                <div className="text-gray-400">0026 EQ</div>
+                <div className="text-blue-400">0027 PUSH2 0x003b</div>
+                <div className="text-red-400">002A JUMPI</div>
+                <div className="text-blue-400">002B JUMPDEST</div>
+                <div className="text-blue-400">002C PUSH1 0x00</div>
+                <div className="text-purple-400">002E DUP1</div>
+                <div className="text-red-400">002F REVERT</div>
+                <div className="text-blue-400">0030 JUMPDEST</div>
+                <div className="text-blue-400">0031 PUSH2 0x005a</div>
+                <div className="text-blue-400">0034 PUSH2 0x0047</div>
+                <div className="text-red-400">0037 JUMP</div>
                 <div className="text-gray-500">...</div>
               </div>
             </Card>
@@ -453,8 +480,8 @@ export default function App() {
             <TxInstrsView data={mockTxInstrs} />
           </div>
 
-          {/* ===== RIGHT COLUMN (6/12) - Increased width for Stack/Memory ===== */}
-          <div className="col-span-12 xl:col-span-6 space-y-4">
+          {/* ===== RIGHT COLUMN (5/12) - INCREASED WIDTH ===== */}
+          <div className="col-span-12 xl:col-span-5 space-y-4">
             {/* Stack */}
             <Card title="Stack">
               <StackView items={mockStackItems} className="max-h-64" />
@@ -463,6 +490,11 @@ export default function App() {
             {/* Memory */}
             <Card title="Memory">
               <MemoryView segments={mockMemorySegments} className="max-h-64" />
+            </Card>
+
+            {/* Memory Mappings */}
+            <Card title="Memory Mappings">
+              <MemoryMappingsView mappings={mockTxInstrs.lastRunInstr?.memoryMappings || []} />
             </Card>
 
             {/* Transient Storage */}
