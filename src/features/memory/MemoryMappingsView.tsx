@@ -24,25 +24,31 @@ export default function MemoryMappingsView({ mappings, className = "" }: MemoryM
                 </div>
 
                 {/* List */}
-                {mappings.map((m, i) => (
-                    <div
-                        key={i}
-                        className={`flex items-center justify-between px-3 py-2 text-xs font-mono ${i % 2 === 0 ? 'bg-white dark:bg-gray-900/20' : 'bg-gray-50 dark:bg-gray-800/10'
-                            }`}
-                    >
-                        <div className="flex items-center gap-4 w-1/3">
-                            <span className="text-gray-700 dark:text-gray-400">{m.range}</span>
-                            <span className="text-gray-400">=&gt;</span>
-                        </div>
+                {mappings.map((m, i) => {
+                    // Cycle colors for range text - Change color every line
+                    const colorCycle = ["text-green-600 dark:text-green-400", "text-blue-600 dark:text-blue-400", "text-purple-600 dark:text-purple-400", "text-orange-600 dark:text-orange-400"];
+                    const colorClass = colorCycle[i % colorCycle.length];
 
-                        <div className="flex items-center gap-8">
-                            <span className="text-gray-600 dark:text-gray-400 font-mono w-10 text-right">{m.pc}</span>
-                            <div className="w-20 flex justify-end">
-                                <Badge color="info" size="sm" className="w-full justify-center">{m.opcode}</Badge>
+                    return (
+                        <div
+                            key={i}
+                            className={`flex items-center justify-between px-3 py-2 text-xs font-mono ${i % 2 === 0 ? 'bg-white dark:bg-gray-900/20' : 'bg-gray-50 dark:bg-gray-800/10'
+                                }`}
+                        >
+                            <div className="flex items-center gap-4 w-1/3">
+                                <span className={`font-bold ${colorClass}`}>{m.range}</span>
+                                <span className="text-gray-400">=&gt;</span>
+                            </div>
+
+                            <div className="flex items-center gap-8">
+                                <span className="text-gray-600 dark:text-gray-400 font-mono w-10 text-right">{m.pc}</span>
+                                <div className="w-20 flex justify-end">
+                                    <Badge color="info" size="sm" className="w-full justify-center">{m.opcode}</Badge>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
