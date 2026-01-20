@@ -187,7 +187,7 @@ export default function App() {
 
           {/* 2. Search bar, prominent (with order-2 and flex-1 it adapts) */}
           {/* on la garde au milieu, sur mobile comme sur ordi */}
-          <div className="flex-1 min-w-0 order-2 md:flex-none md:w-150 mx-1 md:mx-2">
+          <div className="flex-1 min-w-0 order-2 md:flex-none md:w-auto md:flex-1 mx-1 md:mx-2 max-w-xl">
             <Input
               placeholder="Tx hash..."
               className="w-full h-9 md:h-10 text-xs md:text-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-brand-500/20 transition-all rounded-xl"
@@ -226,9 +226,18 @@ export default function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Load</Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Load URL</Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">Import</Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
+              <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+              <span className="hidden lg:inline">Load</span>
+            </Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
+              <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+              <span className="hidden lg:inline">Load URL</span>
+            </Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
+              <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              <span className="hidden lg:inline">Import</span>
+            </Button>
 
             {/* Status Badge */}
             <div className="flex items-center justify-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/5 px-2.5 py-1 text-[10px] md:text-xs font-medium text-orange-500 whitespace-nowrap h-8">
@@ -246,8 +255,8 @@ export default function App() {
       {/* ========== MAIN CONTENT ========== */}
       <main className="p-6">
         <div className="grid grid-cols-12 gap-6">
-          {/* ===== LEFT COLUMN (3/12) ===== */}
-          <div className="col-span-12 xl:col-span-3 space-y-4">
+          {/* ===== LEFT COLUMN (3/12 on LG, 4/12 on MD) ===== */}
+          <div className="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
             {/* Execution - Modern Panel */}
             <ExecutionPanel
               speed={speed}
@@ -422,17 +431,10 @@ export default function App() {
               </div>
             </Card>
 
-            {/* Coverage */}
-            <Card title="Coverage">
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 px-3 py-2">
-                <span className="text-xs text-gray-500">Covered PCs</span>
-                <span className="font-mono text-xs text-gray-700 dark:text-gray-300">0 / 0</span>
-              </div>
-            </Card>
           </div>
 
-          {/* ===== CENTER COLUMN (4/12) - REDUCED SLIGHTLY ===== */}
-          <div className="col-span-12 xl:col-span-4 space-y-4">
+          {/* ===== CENTER COLUMN (5/12 on LG, 8/12 on MD) ===== */}
+          <div className="col-span-12 md:col-span-8 lg:col-span-5 space-y-4">
             {/* Opcodes - EN HAUT */}
             <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
@@ -440,6 +442,7 @@ export default function App() {
                 <div className="text-blue-400">0000 PUSH1 0x80</div>
                 <div className="text-blue-400">0002 PUSH1 0x40</div>
                 <div className="text-yellow-400">0004 MSTORE</div>
+                <div className="text-red-400">PUSH32 0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2</div>
                 <div className="text-blue-400">0005 CALLVALUE</div>
                 <div className="text-purple-400">0006 DUP1</div>
                 <div className="text-green-400">0007 ISZERO</div>
@@ -477,36 +480,48 @@ export default function App() {
             </Card>
 
             {/* TX_INSTRS - EN DESSOUS */}
-            <TxInstrsView data={mockTxInstrs} />
+            <Card title="Instructions">
+              <TxInstrsView data={mockTxInstrs} />
+            </Card>
           </div>
 
-          {/* ===== RIGHT COLUMN (5/12) - INCREASED WIDTH ===== */}
-          <div className="col-span-12 xl:col-span-5 space-y-4">
+          {/* ===== RIGHT COLUMN (4/12 on LG, 12/12 on MD) ===== */}
+          <div className="col-span-12 md:col-span-12 lg:col-span-4 space-y-4">
             {/* Stack */}
             <Card title="Stack">
               <StackView items={mockStackItems} className="max-h-64" />
             </Card>
 
-            {/* Memory */}
-            <Card title="Memory">
-              <MemoryView segments={mockMemorySegments} className="max-h-64" />
-            </Card>
+            {/* Combined Memory & Mappings Card */}
+            <Card title="Memory & Mappings">
+              <div className="space-y-6">
+                {/* Memory View Section */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Segments</h4>
+                  <MemoryView segments={mockMemorySegments} className="max-h-64" />
+                </div>
 
-            {/* Memory Mappings */}
-            <Card title="Memory Mappings">
-              <MemoryMappingsView mappings={mockTxInstrs.lastRunInstr?.memoryMappings || []} />
+                {/* Separator */}
+                <div className="border-t border-gray-100 dark:border-gray-800" />
+
+                {/* Mappings Section */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Active Mappings</h4>
+                  <MemoryMappingsView mappings={mockTxInstrs.lastRunInstr?.memoryMappings || []} />
+                </div>
+              </div>
             </Card>
 
             {/* Transient Storage */}
             <Card title="Transient Storage">
-              <div className="h-24 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-3 font-mono text-xs text-cyan-600 dark:text-cyan-400">
+              <div className="h-24 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3 font-mono text-xs text-cyan-600 dark:text-cyan-400">
                 <div>0xab: 0x42</div>
               </div>
             </Card>
 
             {/* Storage */}
             <Card title="Storage">
-              <div className="h-28 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-3 font-mono text-xs text-purple-600 dark:text-purple-400">
+              <div className="h-28 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3 font-mono text-xs text-purple-600 dark:text-purple-400">
                 <div>0x00: 0x0</div>
                 <div>0x01: 0xdead</div>
               </div>
@@ -514,9 +529,10 @@ export default function App() {
           </div>
         </div>
 
+
         {/* Footer Info */}
         <div className="mt-6 text-center text-xs text-gray-600">
-          Shortcuts: Space Run/Pause • ←/→ Step • A/D Auto
+          Shortcuts: Space Run / Pause • ←/→ Step • A/D Auto
         </div>
       </main>
 
