@@ -56,25 +56,23 @@ export default function ExecutionPanel({
     onStepSizeChange,
     className = "",
 }: ExecutionPanelProps) {
-    const [isPlaying, setIsPlaying] = useState(false);
+    // idle = pause, forward = auto-next, backward = auto-prev
+    const [playState, setPlayState] = useState<'idle' | 'forward' | 'backward'>('idle');
 
-    // Style commun pour les boutons secondaires
-    const secondaryBtnClass = `
-    flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
-    bg-gray-100 dark:bg-gray-800 
-    text-gray-700 dark:text-gray-300
-    hover:bg-gray-200 dark:hover:bg-gray-700
-    border border-gray-200 dark:border-gray-700
-    transition-all duration-200
-    hover:shadow-sm
-  `;
+    const togglePlay = (direction: 'forward' | 'backward') => {
+        if (playState === direction) {
+            setPlayState('idle');
+        } else {
+            setPlayState(direction);
+        }
+    };
 
     return (
         <div className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm ${className}`}>
             {/* Header with Compact Controls */}
             <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 gap-4">
                 <div className="flex items-center gap-2 shrink-0">
-                    <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                    <div className={`w-2 h-2 rounded-full ${playState !== 'idle' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
 
@@ -82,57 +80,45 @@ export default function ExecutionPanel({
                 <div className="flex items-center gap-3">
 
                     {/* Left Group: Backwards */}
-                    <div className="inline-flex rounded-lg shadow-sm">
-                        <Tooltip content="Auto-Previous">
+                    <div className="inline-flex rounded-lg shadow-sm isolate">
+                        <Tooltip content={playState === 'backward' ? "Stop Auto-Previous" : "Auto-Previous"}>
                             <button
-                                className="inline-flex items-center justify-center px-2 py-1.5 text-gray-600 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                                onClick={() => {/* logic for auto-prev */ }} // Needs handler
-                                title="" // Remove native title to use Tooltip
+                                className={`relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-l-lg border transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
+                                    ${playState === 'backward'
+                                        ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-600 focus:ring-orange-500/50 shadow-md z-10'
+                                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+                                    }`}
+                                onClick={() => togglePlay('backward')}
                             >
                                 <RewindIcon />
                             </button>
                         </Tooltip>
                         <Tooltip content="Previous Instruction">
                             <button
-                                className="inline-flex items-center justify-center px-2 py-1.5 -ml-px text-gray-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                                title=""
+                                className="relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px text-slate-500 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                             >
                                 <ChevronLeftIcon />
                             </button>
                         </Tooltip>
                     </div>
 
-                    {/* Middle: Play/Pause */}
-                    <Tooltip content={isPlaying ? "Pause Execution" : "Right Continuous Execution"}>
-                        <button
-                            onClick={() => setIsPlaying(!isPlaying)}
-                            className={`
-                                flex items-center justify-center w-8 h-8 rounded-lg shadow-md transition-all
-                                ${isPlaying
-                                    ? 'bg-orange-500 text-white hover:bg-orange-600 ring-2 ring-orange-500 ring-offset-2 dark:ring-offset-gray-900'
-                                    : 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900'
-                                }
-                            `}
-                        >
-                            {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                        </button>
-                    </Tooltip>
-
                     {/* Right Group: Forwards */}
-                    <div className="inline-flex rounded-lg shadow-sm">
+                    <div className="inline-flex rounded-lg shadow-sm isolate">
                         <Tooltip content="Next Instruction">
                             <button
-                                className="inline-flex items-center justify-center px-2 py-1.5 text-gray-600 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                                title="" // Remove native title
+                                className="relative inline-flex items-center justify-center px-2.5 py-1.5 text-slate-500 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                             >
                                 <ChevronRightIcon />
                             </button>
                         </Tooltip>
-                        <Tooltip content="Auto-Next">
+                        <Tooltip content={playState === 'forward' ? "Stop Auto-Next" : "Auto-Next"}>
                             <button
-                                className="inline-flex items-center justify-center px-2 py-1.5 -ml-px text-gray-600 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-                                onClick={() => {/* logic for auto-next */ }} // Needs handler
-                                title=""
+                                className={`relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px border rounded-r-lg transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
+                                    ${playState === 'forward'
+                                        ? 'bg-green-500 text-white border-green-600 hover:bg-green-600 focus:ring-green-500/50 shadow-md z-10'
+                                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+                                    }`}
+                                onClick={() => togglePlay('forward')}
                             >
                                 <FastForwardIcon />
                             </button>
@@ -142,8 +128,6 @@ export default function ExecutionPanel({
             </div>
 
             <div className="p-4 space-y-4">
-                {/* Controls moved to header */}
-
                 {/* Row 2: Speed */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-2">
                     <div className="flex items-center justify-between">
