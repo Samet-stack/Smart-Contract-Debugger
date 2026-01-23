@@ -48,19 +48,18 @@ export const useApollo = () => {
         }
     }, []);
 
-    // 3. Action Wrappers 
+    // 3. Action Wrappers (Safe access to engine methods)
     const next = useCallback(() => engine?.next(), [engine]);
     const prev = useCallback(() => engine?.prev(), [engine]);
     const setBreakpoint = useCallback((bp: Breakpoint) => engine?.setBreakpoint(bp), [engine]);
 
-    // Simplified Accessors 
+    // Simplified Accessors (Syntax Sugar for UI)
     const currentOpcode = state?.currentInstruction?.opcode;
     const currentStep = state?.currentStep || 0;
 
     // Data extractors with safe defaults
     const stack = state?.stack || [];
     const memory = state?.memory || [];
-    const nextInstruction = state?.nextInstruction || null; // Restored
 
     // 4. Auto-Play Logic
     const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);
@@ -85,12 +84,10 @@ export const useApollo = () => {
     return {
         status,
         rawState: state,
-
         currentStep,
         currentOpcode,
         stack,
         memory,
-        nextInstruction,
 
         // Actions
         next,

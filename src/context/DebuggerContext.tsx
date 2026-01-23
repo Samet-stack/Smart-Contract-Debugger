@@ -3,7 +3,9 @@ import type { ApolloDebuggerAPI, DebuggerState, Breakpoint } from "../types/Apol
 const initialState: DebuggerState = {
     currentStep: 0,
     totalSteps: 0,
+    pcCoverage: 0,
     currentInstruction: null,
+    nextInstruction: null,
     stack: [],
     memory: [],
     isLoading: false,
@@ -25,7 +27,7 @@ const DebuggerContext = createContext<DebuggerContextProps | null>(null);
 export const DebuggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<DebuggerState>(initialState);
     const [api, setApi] = useState<ApolloDebuggerAPI | null>(null);
-  
+
     useEffect(() => {
         if (window.ApolloDebugger) {
             console.log("✅ Apollo Debugger Engine connected");
@@ -43,7 +45,7 @@ export const DebuggerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const run = useCallback(() => api?.run(), [api]);
     const pause = useCallback(() => api?.pause(), [api]);
     const loadTrace = useCallback((data: any) => api?.loadTrace(data), [api]);
-    
+
     const setSpeed = useCallback((x: number) => api?.setSpeed(x), [api]);
     const setStepSize = useCallback((n: number) => api?.setStepSize(n), [api]);
     const setBreakpoint = useCallback((bp: Breakpoint) => api?.setBreakpoint(bp), [api]);

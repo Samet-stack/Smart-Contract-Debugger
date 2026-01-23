@@ -21,6 +21,8 @@ import ConsoleModal from "./features/console/ConsoleModal"; // Import ConsoleMod
 import MemoryMappingsView from "./features/memory/MemoryMappingsView"; // Import MemoryMappingsView
 
 import { useApollo } from "./hooks/useApollo";   // Import Hook
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import Shortcuts Hook
+import { useRef, useCallback } from "react";
 
 export default function App() {
   const [stepSize, setStepSize] = useState(1);
@@ -49,6 +51,65 @@ export default function App() {
     speed,
     setSpeed
   } = useApollo();
+
+  // --- AUTO-PLAY ENGINE (Manual Interval for UI Control) ---
+  const autoPlayInterval = useRef<number | null>(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState<"forward" | "backward" | null>(null);
+
+  const stopAutoPlay = useCallback(() => {
+    if (autoPlayInterval.current) {
+      clearInterval(autoPlayInterval.current);
+      autoPlayInterval.current = null;
+    }
+    setIsAutoPlaying(null);
+  }, []);
+
+  const startAutoPlay = useCallback((direction: "forward" | "backward") => {
+    stopAutoPlay(); // Reset if already active
+    setIsAutoPlaying(direction);
+
+    // Basic interval logic (converting 0-100 speed to ms delay)
+    // Formula: Max delay 1000ms (slow), Min delay 100ms (fast)
+    const delay = Math.max(50, 1000 - (speed * 9));
+
+    autoPlayInterval.current = window.setInterval(() => {
+      if (direction === "forward") {
+        next();
+      } else {
+        prev();
+      }
+    }, delay);
+  }, [next, prev, stopAutoPlay, speed]);
+
+  // Update interval if speed changes while playing
+  // (Optional refinement: restart interval on speed change)
+
+  // --- KEYBOARD SHORTCUTS ---
+  useKeyboardShortcuts({
+    onNext: () => {
+      stopAutoPlay(); // Stop auto-play on manual step
+      next();
+    },
+    onPrev: () => {
+      stopAutoPlay();
+      prev();
+    },
+    onToggleAutoNext: () => {
+      if (isAutoPlaying === "forward") stopAutoPlay();
+      else startAutoPlay("forward");
+    },
+    onToggleAutoPrev: () => {
+      if (isAutoPlaying === "backward") stopAutoPlay();
+      else startAutoPlay("backward");
+    },
+    onSpeedUp: () => setSpeed(s => Math.min(s + 5, 100)),
+    onSpeedDown: () => setSpeed(s => Math.max(s - 5, 0)),
+    onTogglePlay: () => {
+      // Spacebar toggles forward play by default
+      if (isAutoPlaying) stopAutoPlay();
+      else startAutoPlay("forward");
+    }
+  });
 
   // --- ADAPTERS (To match existing UI Props) ---
 
@@ -82,18 +143,7 @@ export default function App() {
       functionSelector: "swap(...)",
       callData: "0x...",
     } : null,
-    nextInstrToRun: nextInstruction ? {
-      number: nextInstruction.stepNumber,
-      total: nextInstruction.totalSteps,
-      pc: nextInstruction.pc,
-      opcode: nextInstruction.opcode,
-      gas: nextInstruction.gas,
-      gasCost: nextInstruction.gasCost,
-      memoryMappings: nextInstruction.memoryMappings || [],
-      memoryChanges: nextInstruction.memoryChanges || [],
-      functionSelector: "...",
-      callData: "...",
-    } : null
+    nextInstrToRun: null // Simple view: current is last run
   };
 
 
@@ -465,15 +515,7 @@ export default function App() {
           {/* ===== CENTER COLUMN (5/12 on LG, 8/12 on MD) ===== */}
           <div className="col-span-12 md:col-span-8 lg:col-span-5 space-y-4">
             {/* Opcodes - EN HAUT */}
-            <Card
-              title="Contract & OpCodes"
-              className="h-[500px] flex flex-col"
-              headerRight={
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">
-                  coverage {currentStep}/{rawState?.totalSteps || 0}
-                </span>
-              }
-            >
+            <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
                 <div className="text-gray-600">/* Opcodes will appear here. */</div>
                 <div className="text-blue-400">0000 PUSH1 0x80</div>

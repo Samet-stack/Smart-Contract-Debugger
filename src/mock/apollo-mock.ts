@@ -14,6 +14,7 @@ class ApolloMock implements ApolloDebuggerAPI {
         return {
             currentStep: 0,
             totalSteps: 100,
+            pcCoverage: 0,
             currentInstruction: {
                 pc: 0,
                 opcode: "PUSH1",
@@ -23,6 +24,7 @@ class ApolloMock implements ApolloDebuggerAPI {
                 totalSteps: 100,
                 description: "Initial Push"
             },
+            nextInstruction: null,
             stack: [],
             memory: [],
             isLoading: false,

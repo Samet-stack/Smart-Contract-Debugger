@@ -10,11 +10,14 @@ export interface MemorySegment {
     value: string;
 
     // Information sur l'instruction qui a modifié ce segment
-    modifiedAt: {
+    // Information sur l'instruction qui a modifié ce segment
+    modifiedAt?: {
         // Program Counter (PC) : position de l'instruction dans le bytecode
         pc: number;
 
         // Opcode : nom de l'instruction EVM (MSTORE, CALLDATACOPY, etc.)
         opcode: string;
     };
+
+    isModifiedInCurrentStep: boolean;
 }
