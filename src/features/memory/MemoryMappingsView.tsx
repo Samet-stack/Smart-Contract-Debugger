@@ -37,7 +37,7 @@ export default function MemoryMappingsView({ mappings, className = "" }: MemoryM
                         >
                             <div className="flex items-center gap-4 w-1/3">
                                 <span className={`font-bold ${colorClass}`}>{m.range}</span>
-                                <span className="text-gray-400">=&gt;</span>
+                                <span className="text-gray-400">→</span>
                             </div>
 
                             <div className="flex items-center gap-8">

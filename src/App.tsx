@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { cn } from "./ui-lib/utils/cn"; // Import cn utility
 import Button from "./ui-lib/components/Button";
@@ -23,7 +23,6 @@ import MemoryMappingsView from "./features/memory/MemoryMappingsView"; // Import
 import { useApollo } from "./hooks/useApollo";   // Import Hook
 
 export default function App() {
-  const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
 
@@ -42,7 +41,13 @@ export default function App() {
     next,
     prev,
     setBreakpoint,
-    nextInstruction // Restored
+
+    nextInstruction,
+    // Auto-Play
+    isPlaying,
+    togglePlay,
+    speed,
+    setSpeed
   } = useApollo();
 
   // --- ADAPTERS (To match existing UI Props) ---
@@ -157,6 +162,34 @@ export default function App() {
     setBreakpoints(breakpoints.filter(bp => bp.id !== id));
   };
 
+  // --- Keyboard Shortcuts ---
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case "ArrowRight":
+          next();
+          break;
+        case "ArrowLeft":
+          prev();
+          break;
+        case " ": // Space
+          e.preventDefault(); // Prevent scrolling
+          togglePlay(); // Toggle run/pause
+          break;
+        // shortcuts A/D for Auto handled by ExecutionPanel state currently,
+        // but could be lifted here if needed.
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [next, prev]);
+
 
 
   return (
@@ -257,6 +290,8 @@ export default function App() {
               onStepSizeChange={setStepSize}
               onNext={next}
               onPrev={prev}
+              isPlaying={isPlaying}
+              onTogglePlay={togglePlay}
             />
 
             {/* Filters */}

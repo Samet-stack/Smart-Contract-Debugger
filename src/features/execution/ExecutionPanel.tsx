@@ -1,7 +1,7 @@
 // ExecutionPanel.tsx
 // Execution Panel with text buttons + readable icons
+// Refactored to be stateless and controlled by parent (useApollo hook)
 
-import { useState, useEffect, useRef } from "react";
 import Tooltip from "../../ui-lib/components/Tooltip";
 
 interface ExecutionPanelProps {
@@ -12,8 +12,9 @@ interface ExecutionPanelProps {
     className?: string;
     onNext?: () => void;
     onPrev?: () => void;
-    onRun?: () => void;
-    onPause?: () => void;
+    // Controlled State from useApollo
+    isPlaying: false | 'forward' | 'backward';
+    onTogglePlay: (direction: 'forward' | 'backward') => void;
 }
 
 // Icônes SVG
@@ -61,60 +62,20 @@ export default function ExecutionPanel({
     className = "",
     onNext,
     onPrev,
-    onRun,
-    onPause,
+    isPlaying,
+    onTogglePlay,
 }:
-
     ExecutionPanelProps) {
-    const [playState, setPlayState] = useState<'idle' | 'forward' | 'backward'>('idle');
 
-    // 1. Maintien des références à jour pour éviter les "stale closures"
-    // Cela permet à setInterval d'appeler toujours la version la plus récente de onNext/onPrev
-    const onNextRef = useRef(onNext);
-    const onPrevRef = useRef(onPrev);
-
-    useEffect(() => {
-        onNextRef.current = onNext;
-        onPrevRef.current = onPrev;
-    }); // Pas de dépendance : on met à jour à chaque rendu
-
-    // 2. Gestion de l'intervalle d'auto-step
-    useEffect(() => {
-        let interval: ReturnType<typeof setInterval>;
-
-        if (playState !== 'idle') {
-            // Mapping de la vitesse : 0% = 1000ms (1s), 100% = 50ms (très rapide)
-            const delay = Math.max(50, 1000 - (speed * 9));
-
-            interval = setInterval(() => {
-                if (playState === 'forward') {
-                    onNextRef.current?.();
-                } else if (playState === 'backward') {
-                    onPrevRef.current?.();
-                }
-            }, delay);
-        }
-
-        return () => clearInterval(interval);
-    }, [playState, speed]);
-
-
-    const togglePlay = (direction: 'forward' | 'backward') => {
-        if (playState !== 'idle') {
-            setPlayState('idle');
-            onPause?.();
-        } else {
-            setPlayState(direction);
-        }
-    };
-
+    // Simplified handlers that just call props
     const HandleManuelNext = () => {
-        setPlayState('idle');
+        // Typically manual step pauses auto-play for better UX.
+        if (isPlaying) onTogglePlay(isPlaying); // Stop
         onNext?.();
     };
 
     const HandleManuelPrev = () => {
-        setPlayState('idle');
+        if (isPlaying) onTogglePlay(isPlaying); // Stop
         onPrev?.();
     };
 
@@ -123,7 +84,7 @@ export default function ExecutionPanel({
             {/* Header with Compact Controls */}
             <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 gap-4">
                 <div className="flex items-center gap-2 shrink-0">
-                    <div className={`w-2 h-2 rounded-full ${playState !== 'idle' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                    <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
 
@@ -132,14 +93,14 @@ export default function ExecutionPanel({
 
                     {/* Left Group: Backwards */}
                     <div className="inline-flex rounded-lg shadow-sm isolate">
-                        <Tooltip content={playState === 'backward' ? "Stop Auto-Previous" : "Auto-Previous"}>
+                        <Tooltip content={isPlaying === 'backward' ? "Stop Auto-Previous" : "Auto-Previous"}>
                             <button
                                 className={`relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-l-lg border transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
-                                    ${playState === 'backward'
+                                    ${isPlaying === 'backward'
                                         ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-600 focus:ring-orange-500/50 shadow-md z-10'
                                         : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
                                     }`}
-                                onClick={() => togglePlay('backward')}
+                                onClick={() => onTogglePlay('backward')}
                             >
                                 <RewindIcon />
                             </button>
@@ -164,14 +125,14 @@ export default function ExecutionPanel({
                                 <ChevronRightIcon />
                             </button>
                         </Tooltip>
-                        <Tooltip content={playState === 'forward' ? "Stop Auto-Next" : "Auto-Next"}>
+                        <Tooltip content={isPlaying === 'forward' ? "Stop Auto-Next" : "Auto-Next"}>
                             <button
                                 className={`relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px border rounded-r-lg transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
-                                    ${playState === 'forward'
+                                    ${isPlaying === 'forward'
                                         ? 'bg-green-500 text-white border-green-600 hover:bg-green-600 focus:ring-green-500/50 shadow-md z-10'
                                         : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
                                     }`}
-                                onClick={() => togglePlay('forward')}
+                                onClick={() => onTogglePlay('forward')}
                             >
                                 <FastForwardIcon />
                             </button>

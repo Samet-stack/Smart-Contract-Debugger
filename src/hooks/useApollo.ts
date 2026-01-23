@@ -62,11 +62,29 @@ export const useApollo = () => {
     const memory = state?.memory || [];
     const nextInstruction = state?.nextInstruction || null; // Restored
 
-    return {
+    // 4. Auto-Play Logic
+    const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);
+    const [speed, setSpeed] = useState(40); // 0-100%
 
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+        if (isPlaying) {
+            const delay = Math.max(50, 1000 - (speed * 9));
+            interval = setInterval(() => {
+                if (isPlaying === 'forward') next();
+                else if (isPlaying === 'backward') prev();
+            }, delay);
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, speed, next, prev]);
+
+    const togglePlay = (direction: 'forward' | 'backward' = 'forward') => {
+        setIsPlaying(current => (current === direction ? false : direction));
+    };
+
+    return {
         status,
         rawState: state,
-
 
         currentStep,
         currentOpcode,
@@ -78,5 +96,11 @@ export const useApollo = () => {
         next,
         prev,
         setBreakpoint,
+
+        // Auto-Play
+        isPlaying,
+        togglePlay,
+        speed,
+        setSpeed
     };
 };
