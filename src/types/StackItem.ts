@@ -10,10 +10,13 @@ export interface StackItem {
     // - produced (vert) : L'instruction a produit cet élément
     // - neutral : Pas affecté par l'instruction courante
     status: StackItemStatus;
+    
 
     // Information sur l'instruction qui a créé cet élément
     modifiedAt?: {
         pc: number;
         opcode: string;
+    
     };
 }
+    

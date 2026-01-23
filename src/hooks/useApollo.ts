@@ -60,17 +60,19 @@ export const useApollo = () => {
     // Data extractors with safe defaults
     const stack = state?.stack || [];
     const memory = state?.memory || [];
+    const nextInstruction = state?.nextInstruction || null; // Restored
 
     return {
-        
+
         status,
         rawState: state,
 
-      
+
         currentStep,
         currentOpcode,
         stack,
         memory,
+        nextInstruction,
 
         // Actions
         next,

@@ -1,7 +1,7 @@
 // ExecutionPanel.tsx
 // Execution Panel with text buttons + readable icons
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Tooltip from "../../ui-lib/components/Tooltip";
 
 interface ExecutionPanelProps {
@@ -63,22 +63,59 @@ export default function ExecutionPanel({
     onPrev,
     onRun,
     onPause,
-}: ExecutionPanelProps) {
-    // idle = pause, forward = auto-next, backward = auto-prev
+}:
+
+    ExecutionPanelProps) {
     const [playState, setPlayState] = useState<'idle' | 'forward' | 'backward'>('idle');
 
+    // 1. Maintien des références à jour pour éviter les "stale closures"
+    // Cela permet à setInterval d'appeler toujours la version la plus récente de onNext/onPrev
+    const onNextRef = useRef(onNext);
+    const onPrevRef = useRef(onPrev);
+
+    useEffect(() => {
+        onNextRef.current = onNext;
+        onPrevRef.current = onPrev;
+    }); // Pas de dépendance : on met à jour à chaque rendu
+
+    // 2. Gestion de l'intervalle d'auto-step
+    useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+
+        if (playState !== 'idle') {
+            // Mapping de la vitesse : 0% = 1000ms (1s), 100% = 50ms (très rapide)
+            const delay = Math.max(50, 1000 - (speed * 9));
+
+            interval = setInterval(() => {
+                if (playState === 'forward') {
+                    onNextRef.current?.();
+                } else if (playState === 'backward') {
+                    onPrevRef.current?.();
+                }
+            }, delay);
+        }
+
+        return () => clearInterval(interval);
+    }, [playState, speed]);
+
+
     const togglePlay = (direction: 'forward' | 'backward') => {
-        if (playState === direction) {
+        if (playState !== 'idle') {
             setPlayState('idle');
-            onPause?.(); // Stop
+            onPause?.();
         } else {
             setPlayState(direction);
-            // Si c'est forward, on lance run()
-            // (Note: l'auto-reverse n'est pas supporté par l'API run() standard, mais on pourrait le simuler)
-            if (direction === 'forward') {
-                onRun?.();
-            }
         }
+    };
+
+    const HandleManuelNext = () => {
+        setPlayState('idle');
+        onNext?.();
+    };
+
+    const HandleManuelPrev = () => {
+        setPlayState('idle');
+        onPrev?.();
     };
 
     return (
@@ -109,7 +146,7 @@ export default function ExecutionPanel({
                         </Tooltip>
                         <Tooltip content="Previous Instruction">
                             <button
-                                onClick={onPrev}
+                                onClick={HandleManuelPrev}
                                 className="relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px text-slate-500 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                             >
                                 <ChevronLeftIcon />
@@ -121,7 +158,7 @@ export default function ExecutionPanel({
                     <div className="inline-flex rounded-lg shadow-sm isolate">
                         <Tooltip content="Next Instruction">
                             <button
-                                onClick={onNext}
+                                onClick={HandleManuelNext}
                                 className="relative inline-flex items-center justify-center px-2.5 py-1.5 text-slate-500 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                             >
                                 <ChevronRightIcon />

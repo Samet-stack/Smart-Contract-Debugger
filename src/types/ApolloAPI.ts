@@ -50,7 +50,9 @@ export interface Breakpoint {
 export interface DebuggerState {
     currentStep: number;
     totalSteps: number;
+    pcCoverage: number;
     currentInstruction: InstructionInfo | null;
+    nextInstruction: InstructionInfo | null; // Restored next instruction
     stack: StackItem[];
     memory: MemorySegment[];
     isLoading: boolean;

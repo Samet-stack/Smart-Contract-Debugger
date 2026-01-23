@@ -1,6 +1,6 @@
 import { cn } from "../utils/cn";
 
-interface InputProps {
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     type?: string;
     placeholder?: string;
     value?: string;
@@ -14,6 +14,7 @@ export default function Input({
     value,
     onChange,
     className = "",
+    ...rest
 }: InputProps) {
     return (
         <input
@@ -25,6 +26,7 @@ export default function Input({
                 "h-10 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500 transition-colors duration-300",
                 className
             )}
+            {...rest}
         />
     );
 }

@@ -1,4 +1,4 @@
-import type { ApolloDebuggerAPI, DebuggerState, Breakpoint } from "../types/ApolloAPI";
+import type { ApolloDebuggerAPI, DebuggerState, Breakpoint, InstructionInfo } from "../types/ApolloAPI";
 /**
  * MOCK ENGINE
  * Simule le comportement du moteur OCaml pour le dév React.
@@ -87,22 +87,38 @@ class ApolloMock implements ApolloDebuggerAPI {
         };
     }
 
+    private getInstruction(step: number): InstructionInfo {
+        return {
+            pc: step * 2,
+            stepNumber: step,
+            totalSteps: this.state.totalSteps,
+            opcode: step % 2 === 0 ? "PUSH1" : "MSTORE",
+            gas: 21000 - (step * 10),
+            gasCost: 3,
+            description: `Instruction at step ${step}`,
+            memoryMappings: [
+                { range: "[0;32]", pc: 123, opcode: "MSTORE" },
+                { range: "[32;64]", pc: 456, opcode: "MSTORE" }
+            ],
+            memoryChanges: step % 5 === 0 ? [{ offset: 0, size: 32 }] : []
+        };
+    }
+
     private updateState(direction: number) {
         const newStep = Math.max(0, Math.min(this.state.totalSteps, this.state.currentStep + direction));
 
         // Simuler des changements de données
         this.state.currentStep = newStep;
-        this.state.currentInstruction = {
-            ...this.state.currentInstruction!,
-            pc: newStep * 2,
-            stepNumber: newStep,
-            opcode: newStep % 2 === 0 ? "PUSH1" : "MSTORE",
-            memoryMappings: [
-                { range: "[0;32]", pc: 123, opcode: "MSTORE" },
-                { range: "[32;64]", pc: 456, opcode: "MSTORE" }
-            ],
-            memoryChanges: newStep % 5 === 0 ? [{ offset: 0, size: 32 }] : []
-        };
+
+        // Generate Current Instruction
+        this.state.currentInstruction = this.getInstruction(newStep);
+
+        // Generate Next Instruction (peek ahead)
+        if (newStep < this.state.totalSteps) {
+            this.state.nextInstruction = this.getInstruction(newStep + 1);
+        } else {
+            this.state.nextInstruction = null;
+        }
 
         // Simuler la stack qui bouge
         if (direction > 0) {

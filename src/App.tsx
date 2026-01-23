@@ -41,7 +41,8 @@ export default function App() {
     rawState,
     next,
     prev,
-    setBreakpoint
+    setBreakpoint,
+    nextInstruction // Restored
   } = useApollo();
 
   // --- ADAPTERS (To match existing UI Props) ---
@@ -76,7 +77,18 @@ export default function App() {
       functionSelector: "swap(...)",
       callData: "0x...",
     } : null,
-    nextInstrToRun: null // Simple view: current is last run
+    nextInstrToRun: nextInstruction ? {
+      number: nextInstruction.stepNumber,
+      total: nextInstruction.totalSteps,
+      pc: nextInstruction.pc,
+      opcode: nextInstruction.opcode,
+      gas: nextInstruction.gas,
+      gasCost: nextInstruction.gasCost,
+      memoryMappings: nextInstruction.memoryMappings || [],
+      memoryChanges: nextInstruction.memoryChanges || [],
+      functionSelector: "...",
+      callData: "...",
+    } : null
   };
 
 
@@ -418,7 +430,15 @@ export default function App() {
           {/* ===== CENTER COLUMN (5/12 on LG, 8/12 on MD) ===== */}
           <div className="col-span-12 md:col-span-8 lg:col-span-5 space-y-4">
             {/* Opcodes - EN HAUT */}
-            <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
+            <Card
+              title="Contract & OpCodes"
+              className="h-[500px] flex flex-col"
+              headerRight={
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-600 dark:text-gray-400">
+                  coverage {currentStep}/{rawState?.totalSteps || 0}
+                </span>
+              }
+            >
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
                 <div className="text-gray-600">/* Opcodes will appear here. */</div>
                 <div className="text-blue-400">0000 PUSH1 0x80</div>
