@@ -10,6 +10,10 @@ interface ExecutionPanelProps {
     stepSize: number;
     onStepSizeChange: (size: number) => void;
     className?: string;
+    onNext?: () => void;
+    onPrev?: () => void;
+    onRun?: () => void;
+    onPause?: () => void;
 }
 
 // Icônes SVG
@@ -55,6 +59,10 @@ export default function ExecutionPanel({
     stepSize,
     onStepSizeChange,
     className = "",
+    onNext,
+    onPrev,
+    onRun,
+    onPause,
 }: ExecutionPanelProps) {
     // idle = pause, forward = auto-next, backward = auto-prev
     const [playState, setPlayState] = useState<'idle' | 'forward' | 'backward'>('idle');
@@ -62,8 +70,14 @@ export default function ExecutionPanel({
     const togglePlay = (direction: 'forward' | 'backward') => {
         if (playState === direction) {
             setPlayState('idle');
+            onPause?.(); // Stop
         } else {
             setPlayState(direction);
+            // Si c'est forward, on lance run()
+            // (Note: l'auto-reverse n'est pas supporté par l'API run() standard, mais on pourrait le simuler)
+            if (direction === 'forward') {
+                onRun?.();
+            }
         }
     };
 
@@ -95,6 +109,7 @@ export default function ExecutionPanel({
                         </Tooltip>
                         <Tooltip content="Previous Instruction">
                             <button
+                                onClick={onPrev}
                                 className="relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px text-slate-500 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                             >
                                 <ChevronLeftIcon />
@@ -106,6 +121,7 @@ export default function ExecutionPanel({
                     <div className="inline-flex rounded-lg shadow-sm isolate">
                         <Tooltip content="Next Instruction">
                             <button
+                                onClick={onNext}
                                 className="relative inline-flex items-center justify-center px-2.5 py-1.5 text-slate-500 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                             >
                                 <ChevronRightIcon />

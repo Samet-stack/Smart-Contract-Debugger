@@ -20,6 +20,8 @@ import SettingsModals from "./features/settings/SettingsModals";
 import ConsoleModal from "./features/console/ConsoleModal"; // Import ConsoleModal
 import MemoryMappingsView from "./features/memory/MemoryMappingsView"; // Import MemoryMappingsView
 
+import { useApollo } from "./hooks/useApollo";   // Import Hook
+
 export default function App() {
   const [speed, setSpeed] = useState(40);
   const [stepSize, setStepSize] = useState(1);
@@ -28,6 +30,52 @@ export default function App() {
 
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab | null>(null);
+
+  // --- HOOK INTEGRATION ---
+  const {
+    status,
+    stack,
+    memory,
+    currentStep,
+    currentOpcode,
+    rawState,
+    next,
+    prev,
+    setBreakpoint
+  } = useApollo();
+
+  // --- ADAPTERS (To match existing UI Props) ---
+
+  // Stack Adapter
+  const stackItems: StackItem[] = stack.map((item, index) => ({
+    value: item.value,
+    label: item.label || `stack[${index}]`, // Fallback label
+    status: item.status,
+    modifiedAt: item.modifiedAt
+  }));
+
+  // Memory Adapter
+  // (Assuming memory from hook matches MemorySegment interface, which we control in state)
+  const memorySegments: MemorySegment[] = memory;
+
+  // TxInstrs Adapter (Dynamic from Hook)
+  const txInstrsData: TxInstrs = {
+    // Fake Gas data for now (or derive if available in rawState later)
+    ourGas: rawState?.currentInstruction?.gas || 0,
+    theirGas: 1000,
+    lastRunInstr: rawState?.currentInstruction ? {
+      number: rawState.currentInstruction.stepNumber,
+      total: rawState.totalSteps,
+      pc: rawState.currentInstruction.pc,
+      opcode: currentOpcode || "UNKNOWN",
+      gas: rawState.currentInstruction.gas,
+      gasCost: rawState.currentInstruction.gasCost,
+      // For now, placeholders for detailed fields not yet in DebuggerState
+      functionSelector: "swap(...)",
+      callData: "0x...",
+    } : null,
+    nextInstrToRun: null // Simple view: current is last run
+  };
 
 
   type BreakpointType = "Storage" | "Transient" | "Memory";
@@ -61,6 +109,15 @@ export default function App() {
       type,
       value: inputValue
     };
+
+    // Call Hook Action
+    setBreakpoint({
+      id: newBp.id,
+      type: newBp.type,
+      value: newBp.value,
+      enabled: true
+    });
+
     setBreakpoints([...breakpoints, newBp]);
     setInput("");
   };
@@ -84,85 +141,6 @@ export default function App() {
 
   const removeBreakpoint = (id: string) => {
     setBreakpoints(breakpoints.filter(bp => bp.id !== id));
-  };
-
-
-  // Mock data for Memory View (temporary data for testing) 
-  const mockMemorySegments: MemorySegment[] = [
-    { offset: 0, value: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de", modifiedAt: { pc: 1139, opcode: "MSTORE" } },
-    { offset: 32, value: "22264a61000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1146, opcode: "MSTORE" } },
-    { offset: 64, value: "0000000100000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1154, opcode: "MSTORE" } },
-    { offset: 96, value: "10c866840000000000000000000000000000000000000000000000000000001", modifiedAt: { pc: 1193, opcode: "MSTORE" } },
-    { offset: 128, value: "000276a4000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1184, opcode: "MSTORE" } },
-    { offset: 160, value: "00000a00000000000000000000000000000000000000000000000000000000", modifiedAt: { pc: 1198, opcode: "MSTORE" } },
-    { offset: 192, value: "000000e0800028ab20253eada6d85fceceeea5cd3f659281410347b7e6381de6", modifiedAt: { pc: 1202, opcode: "MSTORE" } },
-    { offset: 224, value: "5afa210680000000000000000000a03155acd9f75915fcc21d34035f440da7", modifiedAt: { pc: 1208, opcode: "CALLDATACOPY" } },
-  ];
-
-  // Mock data for Stack View (exemple d'instruction SHL)
-  // SHL consomme 2 éléments (shift, value) et produit 1 élément (result)
-  const mockStackItems: StackItem[] = [
-    // Items CONSUMED by instruction (red background)
-    { value: "0x00000000000000000000000000000000000000000000000000000000000000ff", label: "shift", status: "consumed" },
-    { value: "0x0000000000000000000000000000000000000000000000000000000000000001", label: "value", status: "consumed" },
-    // Item PRODUCED by instruction (green background)
-    { value: "0x8000000000000000000000000000000000000000000000000000000000000000", label: "result", status: "produced", modifiedAt: { pc: 1117, opcode: "SHL" } },
-    // NEUTRAL items (not affected)
-    { value: "0x000000000000000000000000000000000000000000000000000000000000e0", status: "neutral", modifiedAt: { pc: 1073, opcode: "SWAP1" } },
-    { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 1073, opcode: "SWAP1" } },
-    { value: "0x0000000000000000000000000000000000000000000000000000000000000300", status: "neutral", modifiedAt: { pc: 759, opcode: "PUSH2" } },
-    { value: "0x80000000001a869338d1db7fae0554a476a092703abdb3ef35c80e0d76d32939f", status: "neutral", modifiedAt: { pc: 758, opcode: "CALLDATALOAD" } },
-  ];
-
-  // Mock data for Instruction Execution (realistic data from real Apollo execution)
-  const mockTxInstrs: TxInstrs = {
-    ourGas: 2880,
-    theirGas: 618,
-    lastRunInstr: {
-      number: 267,
-      total: 15701,
-      pc: 2368,
-      opcode: "MSTORE",
-      functionSelector: "swap(address,bool,int256,uint160,bytes)",
-      callData: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de22264a6100000000000000000000000000000000000000000001000000000000000000000010c866840000000000000000000000000000000000000001000276a4000000000000000000000000000000000000000a00000000000000000000000000000000000000e0800028ab20253eada6d85fceceeea5cd3f659281410347b7e6381de65afa21068000000000000000000a03155acd9f75915fcc21d34035f440da7040bd3ba08800000019501",
-      gas: 159198,
-      gasCost: 3,
-      depth: 2,
-      memoryMappings: [
-        { range: "[0;4]", pc: 1139, opcode: "MSTORE" },
-        { range: "[4;36]", pc: 1146, opcode: "MSTORE" },
-        { range: "[36;68]", pc: 1154, opcode: "MSTORE" },
-        { range: "[68;100]", pc: 1193, opcode: "MSTORE" },
-        { range: "[100;132]", pc: 1184, opcode: "MSTORE" },
-        { range: "[132;164]", pc: 1198, opcode: "MSTORE" },
-        { range: "[164;196]", pc: 1202, opcode: "MSTORE" },
-        { range: "[196;420]", pc: 1208, opcode: "CALLDATACOPY" },
-      ],
-      memoryChanges: [{ offset: 64, size: 32 }],
-      lastConditionalJump: { pc: 2308, opcode: "JUMPI", condition: "10c86684" },
-    },
-    nextInstrToRun: {
-      number: 268,
-      total: 15701,
-      pc: 2369,
-      opcode: "PUSH1",
-      functionSelector: "swap(address,bool,int256,uint160,bytes)",
-      callData: "128acb0880000000000000010c8668466f67bb3376c87f384688a87ff9e63de22264a6100000000000000000000000000000000000000000001000000000000000000000010c866840000000000000000000000000000000000000001000276a4000000000000000000000000000000000000000a00000000000000000000000000000",
-      gas: 159195,
-      gasCost: 3,
-      depth: 2,
-      memoryMappings: [
-        { range: "[0;4]", pc: 1139, opcode: "MSTORE" },
-        { range: "[4;36]", pc: 1146, opcode: "MSTORE" },
-        { range: "[36;68]", pc: 1154, opcode: "MSTORE" },
-        { range: "[68;100]", pc: 1193, opcode: "MSTORE" },
-        { range: "[100;132]", pc: 1184, opcode: "MSTORE" },
-        { range: "[132;164]", pc: 1198, opcode: "MSTORE" },
-        { range: "[164;196]", pc: 1202, opcode: "MSTORE" },
-        { range: "[196;420]", pc: 1208, opcode: "CALLDATACOPY" },
-      ],
-      lastConditionalJump: { pc: 2308, opcode: "JUMPI", condition: "10c86684" },
-    },
   };
 
 
@@ -263,6 +241,8 @@ export default function App() {
               onSpeedChange={setSpeed}
               stepSize={stepSize}
               onStepSizeChange={setStepSize}
+              onNext={next}
+              onPrev={prev}
             />
 
             {/* Filters */}
@@ -479,9 +459,8 @@ export default function App() {
               </div>
             </Card>
 
-            {/* TX_INSTRS - EN DESSOUS */}
             <Card title="Instructions">
-              <TxInstrsView data={mockTxInstrs} />
+              <TxInstrsView data={txInstrsData} />
             </Card>
           </div>
 
@@ -489,7 +468,7 @@ export default function App() {
           <div className="col-span-12 md:col-span-12 lg:col-span-4 space-y-4">
             {/* Stack */}
             <Card title="Stack">
-              <StackView items={mockStackItems} className="max-h-64" />
+              <StackView items={stackItems} className="max-h-64" />
             </Card>
 
             {/* Combined Memory & Mappings Card */}
@@ -498,7 +477,7 @@ export default function App() {
                 {/* Memory View Section */}
                 <div>
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Segments</h4>
-                  <MemoryView segments={mockMemorySegments} className="max-h-64" />
+                  <MemoryView segments={memorySegments} className="max-h-64" />
                 </div>
 
                 {/* Separator */}
@@ -507,7 +486,7 @@ export default function App() {
                 {/* Mappings Section */}
                 <div>
                   <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Active Mappings</h4>
-                  <MemoryMappingsView mappings={mockTxInstrs.lastRunInstr?.memoryMappings || []} />
+                  <MemoryMappingsView mappings={txInstrsData.lastRunInstr?.memoryMappings || []} />
                 </div>
               </div>
             </Card>
