@@ -30,7 +30,7 @@ class ApolloMock implements ApolloDebuggerAPI {
             traceId: "mock-trace-123"
         };
     }
-   
+
     public loadTrace(traceData: any): void {
         console.log("📦 Mock: Trace chargée", traceData);
         this.state = this.getInitialState();
@@ -80,38 +80,60 @@ class ApolloMock implements ApolloDebuggerAPI {
         this.subscribers.push(callback);
         // Appeler immédiatement avec l'état actuel
         callback(this.getCurrentState());
-        
+
         // Fonction de désabonnement
         return () => {
             this.subscribers = this.subscribers.filter(cb => cb !== callback);
         };
     }
-    
+
     private updateState(direction: number) {
         const newStep = Math.max(0, Math.min(this.state.totalSteps, this.state.currentStep + direction));
-        
+
         // Simuler des changements de données
         this.state.currentStep = newStep;
         this.state.currentInstruction = {
             ...this.state.currentInstruction!,
             pc: newStep * 2,
             stepNumber: newStep,
-            opcode: newStep % 2 === 0 ? "PUSH1" : "MSTORE"
+            opcode: newStep % 2 === 0 ? "PUSH1" : "MSTORE",
+            memoryMappings: [
+                { range: "[0;32]", pc: 123, opcode: "MSTORE" },
+                { range: "[32;64]", pc: 456, opcode: "MSTORE" }
+            ],
+            memoryChanges: newStep % 5 === 0 ? [{ offset: 0, size: 32 }] : []
         };
-        
+
         // Simuler la stack qui bouge
         if (direction > 0) {
-            this.state.stack.push({ 
-                value: `0x${(newStep * 12345).toString(16).padStart(64, '0')}`, 
-                status: "produced" 
+            this.state.stack.push({
+                value: `0x${(newStep * 12345).toString(16).padStart(64, '0')}`,
+                status: "produced"
             });
         } else {
             this.state.stack.pop();
         }
+
+        // Mock Memory updates
+        this.state.memory = [
+            {
+                offset: 0,
+                value: `0x${(newStep * 999).toString(16).padStart(64, '0')}`,
+                modifiedAt: { pc: newStep * 2, opcode: "MSTORE" },
+                isModifiedInCurrentStep: true
+            },
+            {
+                offset: 32,
+                value: "0x0000000000000000000000000000000000000000000000000000000000000001",
+                modifiedAt: { pc: 1146, opcode: "MSTORE" },
+                isModifiedInCurrentStep: false
+            }
+        ];
+
         this.notify();
     }
     private notify() {
-        
+
         const safeState = { ...this.state };
         this.subscribers.forEach(cb => cb(safeState));
     }

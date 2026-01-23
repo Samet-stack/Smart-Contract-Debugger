@@ -70,6 +70,8 @@ export default function App() {
       opcode: currentOpcode || "UNKNOWN",
       gas: rawState.currentInstruction.gas,
       gasCost: rawState.currentInstruction.gasCost,
+      memoryMappings: rawState.currentInstruction.memoryMappings || [],
+      memoryChanges: rawState.currentInstruction.memoryChanges || [],
       // For now, placeholders for detailed fields not yet in DebuggerState
       functionSelector: "swap(...)",
       callData: "0x...",

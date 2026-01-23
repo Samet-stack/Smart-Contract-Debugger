@@ -12,6 +12,23 @@ export interface MemorySegment {
     modifiedAt?: { pc: number; opcode: string };
     isModifiedInCurrentStep: boolean;
 }
+export interface MemoryMapping {
+    range: string;
+    pc: number;
+    opcode: string;
+}
+
+export interface MemoryChange {
+    offset: number;
+    size: number;
+}
+
+export interface ConditionalJump {
+    pc: number;
+    opcode: string;
+    condition: string;
+}
+
 export interface InstructionInfo {
     pc: number;
     opcode: string;
@@ -20,6 +37,9 @@ export interface InstructionInfo {
     stepNumber: number;
     totalSteps: number;
     description?: string;
+    memoryMappings?: MemoryMapping[];
+    memoryChanges?: MemoryChange[];
+    lastConditionalJump?: ConditionalJump;
 }
 export interface Breakpoint {
     id: string;
