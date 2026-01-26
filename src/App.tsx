@@ -24,6 +24,8 @@ import { useApollo } from "./hooks/useApollo";   // Import Hook
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import Shortcuts Hook
 import { useRef, useCallback } from "react";
 
+import { MOCK_CONTRACT_OPCODES, MOCK_STORAGE, MOCK_TRANSIENT_STORAGE } from "./mock/contract-data";
+
 export default function App() {
   const [stepSize, setStepSize] = useState(1);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
@@ -113,13 +115,83 @@ export default function App() {
 
   // --- ADAPTERS (To match existing UI Props) ---
 
-  // Stack Adapter
-  const stackItems: StackItem[] = stack.map((item, index) => ({
-    value: item.value,
-    label: item.label || `stack[${index}]`, // Fallback label
-    status: item.status,
-    modifiedAt: item.modifiedAt
-  }));
+  // --- VISUAL STACK LOGIC (App Level) ---
+  // State to hold exactly 2 items: [Previous (Red), Current (Green)]
+  const [visualStack, setVisualStack] = useState<{ prev: any | null, curr: any | null }>({ prev: null, curr: null });
+  const lastStepRef = useRef<number>(-1);
+
+  // Reset visual stack when status changes (e.g. reload)
+  useEffect(() => {
+    if (status === "Loading" || currentStep === 0) {
+      setVisualStack({ prev: null, curr: null });
+      lastStepRef.current = -1;
+    }
+  }, [status, currentStep]);
+
+  useEffect(() => {
+    // Only update if Step has changed
+    if (currentStep !== lastStepRef.current) {
+      const topItem = stack[0]; // Raw stack top
+
+      setVisualStack(old => {
+        // If it's a reset (step 0), clean up.
+        if (currentStep === 0) return { prev: null, curr: topItem ? { ...topItem, _vid: `v-0` } : null };
+
+        // New "Current" is the new top
+        // New "Previous" is the OLD "Current"
+        return {
+          prev: old.curr, // Shift current to previous
+          curr: topItem ? { ...topItem, _vid: `v-${currentStep}` } : null
+        };
+      });
+      lastStepRef.current = currentStep;
+    }
+  }, [currentStep, stack]);
+
+  // Transform for display: 
+  // 1. Previous (Red) - Ghost
+  // 2. Current (Green) - Top of Stack
+  // 3. Rest of Stack (Neutral) - items[1..n]
+  const displayItems: StackItem[] = [];
+
+  if (visualStack.prev) {
+    displayItems.push({
+      ...visualStack.prev,
+      status: 'consumed',
+      isPopped: true,
+      label: visualStack.prev.label || 'prev'
+    });
+  }
+
+  if (visualStack.curr) {
+    displayItems.push({
+      ...visualStack.curr,
+      status: 'produced',
+      isPopped: false,
+      label: visualStack.curr.label || 'curr'
+    });
+  }
+
+  // Smart Slice: Avoid duplicating 'prev' if it's still in the stack (index 1)
+  // This happens on PUSH (Top -> new 2nd item).
+  // On POP, the old top is gone, so stack[1] is different.
+  let sliceIndex = 1;
+  if (stack.length > 1 && visualStack.prev && stack[1].value === visualStack.prev.value) {
+    sliceIndex = 2;
+  }
+
+  // Append the rest of the stack
+  if (stack.length >= sliceIndex) {
+    stack.slice(sliceIndex).forEach((item, index) => {
+      displayItems.push({
+        value: item.value,
+        label: item.label || `stack[${index + sliceIndex}]`,
+        status: 'neutral', // Neutral color
+        isPopped: false,
+        modifiedAt: item.modifiedAt
+      });
+    });
+  }
 
   // Memory Adapter
   // (Assuming memory from hook matches MemorySegment interface, which we control in state)
@@ -518,42 +590,13 @@ export default function App() {
             <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
                 <div className="text-gray-600">/* Opcodes will appear here. */</div>
-                <div className="text-blue-400">0000 PUSH1 0x80</div>
-                <div className="text-blue-400">0002 PUSH1 0x40</div>
-                <div className="text-yellow-400">0004 MSTORE</div>
-                <div className="text-red-400">PUSH32 0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2</div>
-                <div className="text-blue-400">0005 CALLVALUE</div>
-                <div className="text-purple-400">0006 DUP1</div>
-                <div className="text-green-400">0007 ISZERO</div>
-                <div className="text-blue-400">0008 PUSH2 0x0010</div>
-                <div className="text-red-400">000B JUMPI</div>
-                <div className="text-blue-400">000C PUSH1 0x00</div>
-                <div className="text-purple-400">000E DUP1</div>
-                <div className="text-red-400">000F REVERT</div>
-                <div className="text-blue-400">0010 JUMPDEST</div>
-                <div className="text-purple-400">0011 POP</div>
-                <div className="text-blue-400">0012 PUSH1 0x04</div>
-                <div className="text-purple-400">0014 CALLDATASIZE</div>
-                <div className="text-gray-400">0015 LT</div>
-                <div className="text-blue-400">0016 PUSH2 0x0036</div>
-                <div className="text-red-400">0019 JUMPI</div>
-                <div className="text-blue-400">001A PUSH1 0x00</div>
-                <div className="text-purple-400">001C CALLDATALOAD</div>
-                <div className="text-blue-400">001D PUSH1 0xe0</div>
-                <div className="text-gray-400">001F SHR</div>
-                <div className="text-purple-400">0020 DUP1</div>
-                <div className="text-blue-400">0021 PUSH4 0x10c86684</div>
-                <div className="text-gray-400">0026 EQ</div>
-                <div className="text-blue-400">0027 PUSH2 0x003b</div>
-                <div className="text-red-400">002A JUMPI</div>
-                <div className="text-blue-400">002B JUMPDEST</div>
-                <div className="text-blue-400">002C PUSH1 0x00</div>
-                <div className="text-purple-400">002E DUP1</div>
-                <div className="text-red-400">002F REVERT</div>
-                <div className="text-blue-400">0030 JUMPDEST</div>
-                <div className="text-blue-400">0031 PUSH2 0x005a</div>
-                <div className="text-blue-400">0034 PUSH2 0x0047</div>
-                <div className="text-red-400">0037 JUMP</div>
+                {MOCK_CONTRACT_OPCODES.map((op, i) => (
+                  <div key={i} className={op.color}>
+                    {op.pc && <span className="mr-2 inline-block w-8 opacity-50">{op.pc}</span>}
+                    <span className="font-bold">{op.mnemonic}</span>
+                    {op.args && <span className="ml-2 opacity-75">{op.args}</span>}
+                  </div>
+                ))}
                 <div className="text-gray-500">...</div>
               </div>
             </Card>
@@ -567,7 +610,7 @@ export default function App() {
           <div className="col-span-12 md:col-span-12 lg:col-span-4 space-y-4">
             {/* Stack */}
             <Card title="Stack">
-              <StackView items={stackItems} className="max-h-64" />
+              <StackView items={displayItems} className="max-h-64" />
             </Card>
 
             {/* Combined Memory & Mappings Card */}

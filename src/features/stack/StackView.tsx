@@ -17,8 +17,11 @@ interface StackViewProps {
 export default function StackView({ items, className = "" }: StackViewProps) {
 
     // Fonction qui retourne les classes CSS selon le statut
-    const getStatusClasses = (status: StackItem["status"]): string => {
-        switch (status) {
+    const getStatusClasses = (item: StackItem): string => {
+        if (item.isPopped) {
+            return "bg-red-900/30 text-red-700 dark:text-red-400 border border-red-500/30";
+        }
+        switch (item.status) {
             case "consumed":
                 return "bg-red-500/20";
             case "produced":
@@ -42,7 +45,7 @@ export default function StackView({ items, className = "" }: StackViewProps) {
                 {/* CORPS - Une ligne par élément de stack */}
                 <TableBody>
                     {items.map((item, index) => (
-                        <TableRow key={index} className={getStatusClasses(item.status)}>
+                        <TableRow key={(item as any)._visualId || index} className={getStatusClasses(item)}>
                             {/* Colonne 1 : Label (si présent) + Valeur */}
                             <TableCell className="break-all text-xs">
                                 {item.label && (

@@ -16,22 +16,18 @@ export const useApollo = () => {
 
     // 2. Initialization & Subscription (The Plumbing)
     useEffect(() => {
-        // Access the global API injected by Jsoo
         const api = window.ApolloDebugger;
 
         if (api) {
             setEngine(api);
             setStatus("Ready");
-
-            // Load initial state immediately
             setState(api.getCurrentState());
 
-            // Subscribe to Engine updates (Automatic UI Refresh)
-            // This callback is triggered by OCaml whenever the state changes (next/prev/etc)
             const unsubscribe = api.subscribe((newState) => {
-                setState(newState);
-
-                // Derive status from the new state
+                // Force new object reference to ensure React triggers re-render
+                // checking against previous state to avoid infinite loops if needed, 
+                // but spreading is safer for now.
+                setState({ ...newState });
                 if (newState.error) {
                     setStatus("Error");
                 } else if (newState.isLoading) {
@@ -48,22 +44,24 @@ export const useApollo = () => {
         }
     }, []);
 
-    // 3. Action Wrappers (Safe access to engine methods)
+    // 3. Action Wrappers
     const next = useCallback(() => engine?.next(), [engine]);
     const prev = useCallback(() => engine?.prev(), [engine]);
     const setBreakpoint = useCallback((bp: Breakpoint) => engine?.setBreakpoint(bp), [engine]);
 
-    // Simplified Accessors (Syntax Sugar for UI)
+    // Simplified Accessors
     const currentOpcode = state?.currentInstruction?.opcode;
     const currentStep = state?.currentStep || 0;
 
-    // Data extractors with safe defaults
-    const stack = state?.stack || [];
+    // Data extractors
+    const rawStack = state?.stack || [];
     const memory = state?.memory || [];
+
+
 
     // 4. Auto-Play Logic
     const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);
-    const [speed, setSpeed] = useState(40); // 0-100%
+    const [speed, setSpeed] = useState(40);
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
@@ -86,7 +84,7 @@ export const useApollo = () => {
         rawState: state,
         currentStep,
         currentOpcode,
-        stack,
+        stack: rawStack, // Return RAW stack
         memory,
 
         // Actions
