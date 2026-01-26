@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import { ThemeProvider } from "./ui-lib/context/ThemeContext";
 
 // Initialize Apollo Mock Engine
-import "./mock/apollo-mock";
+// import "./mock/apollo-mock";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

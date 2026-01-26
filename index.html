@@ -10,7 +10,73 @@
 
 <body>
   <div id="root"></div>
-  <script src="/js/apollo-engine.js?v=debug2"></script>
+  <!-- Vue stub for apollo-engine.js compatibility (js_of_ocaml uses globalThis) -->
+  <script>
+    (function () {
+      // Helper to create fake Vue component
+      const fakeComponent = (name) => ({ name, render: () => null, setup: () => ({}) });
+
+      const VueStub = {
+        defineComponent: (c) => c || {},
+        ref: (v) => ({ value: v }),
+        reactive: (o) => o || {},
+        computed: (fn) => ({ value: typeof fn === 'function' ? fn() : fn }),
+        watch: () => () => { },
+        watchEffect: () => () => { },
+        onMounted: () => { },
+        onUnmounted: () => { },
+        onBeforeMount: () => { },
+        onBeforeUnmount: () => { },
+        h: () => null,
+        createApp: () => ({ mount: () => { }, use: () => ({}), component: () => ({}) }),
+        nextTick: (fn) => Promise.resolve().then(fn),
+        toRaw: (o) => o,
+        markRaw: (o) => o,
+        shallowRef: (v) => ({ value: v }),
+        shallowReactive: (o) => o || {},
+        inject: () => undefined,
+        provide: () => { },
+        getCurrentInstance: () => null,
+      };
+
+      const ElementPlusStub = {
+        ElButton: fakeComponent('ElButton'),
+        ElIcon: fakeComponent('ElIcon'),
+        ElCol: fakeComponent('ElCol'),
+        ElRow: fakeComponent('ElRow'),
+        ElLink: fakeComponent('ElLink'),
+        ElCheckbox: fakeComponent('ElCheckbox'),
+        ElForm: fakeComponent('ElForm'),
+        ElFormItem: fakeComponent('ElFormItem'),
+        ElInput: fakeComponent('ElInput'),
+        ElInputNumber: fakeComponent('ElInputNumber'),
+        ElInputTag: fakeComponent('ElInputTag'),
+        ElSelect: fakeComponent('ElSelect'),
+        ElOption: fakeComponent('ElOption'),
+        ElUpload: fakeComponent('ElUpload'),
+        ElCard: fakeComponent('ElCard'),
+        ElMenu: fakeComponent('ElMenu'),
+        ElMenuItem: fakeComponent('ElMenuItem'),
+        ElMenuItemGroup: fakeComponent('ElMenuItemGroup'),
+        ElTabs: fakeComponent('ElTabs'),
+        ElTabPane: fakeComponent('ElTabPane'),
+        ElMessage: () => { },
+        ElTooltip: fakeComponent('ElTooltip'),
+        ElDivider: fakeComponent('ElDivider'),
+        ElBacktop: fakeComponent('ElBacktop'),
+      };
+
+      const ElementPlusIconsStub = {
+        Setting: fakeComponent('Setting'),
+      };
+
+      // Set on both window and globalThis for js_of_ocaml compatibility
+      window.Vue = globalThis.Vue = VueStub;
+      window.ElementPlus = globalThis.ElementPlus = ElementPlusStub;
+      window.ElementPlusIconsVue = globalThis.ElementPlusIconsVue = ElementPlusIconsStub;
+    })();
+  </script>
+  <script src="/js/apollo-engine.js?v=debug7"></script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

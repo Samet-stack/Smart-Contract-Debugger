@@ -24,7 +24,7 @@ import { useApollo } from "./hooks/useApollo";   // Import Hook
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import Shortcuts Hook
 import { useRef, useCallback } from "react";
 
-import { MOCK_CONTRACT_OPCODES, MOCK_STORAGE, MOCK_TRANSIENT_STORAGE } from "./mock/contract-data";
+// import { MOCK_CONTRACT_OPCODES, MOCK_STORAGE, MOCK_TRANSIENT_STORAGE } from "./mock/contract-data"; // Removed mock data
 
 export default function App() {
   const [stepSize, setStepSize] = useState(1);
@@ -130,7 +130,7 @@ export default function App() {
   const txInstrsData: TxInstrs = {
     // Fake Gas data for now (or derive if available in rawState later)
     ourGas: rawState?.currentInstruction?.gas || 0,
-    theirGas: 1000,
+    theirGas: 0,
     lastRunInstr: rawState?.currentInstruction ? {
       number: rawState.currentInstruction.stepNumber,
       total: rawState.totalSteps,
@@ -141,8 +141,8 @@ export default function App() {
       memoryMappings: rawState.currentInstruction.memoryMappings || [],
       memoryChanges: rawState.currentInstruction.memoryChanges || [],
       // For now, placeholders for detailed fields not yet in DebuggerState
-      functionSelector: "swap(...)",
-      callData: "0x...",
+      functionSelector: "",
+      callData: "",
     } : null,
     // Wire nextInstruction from the hook
     nextInstrToRun: nextInstruction ? {
@@ -154,8 +154,8 @@ export default function App() {
       gasCost: nextInstruction.gasCost,
       memoryMappings: nextInstruction.memoryMappings || [],
       memoryChanges: nextInstruction.memoryChanges || [],
-      functionSelector: "swap(...)",
-      callData: "0x...",
+      functionSelector: "",
+      callData: "",
     } : null
   };
 
@@ -531,14 +531,10 @@ export default function App() {
             <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
               <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
                 <div className="text-gray-600">/* Opcodes will appear here. */</div>
-                {MOCK_CONTRACT_OPCODES.map((op, i) => (
-                  <div key={i} className={op.color}>
-                    {op.pc && <span className="mr-2 inline-block w-8 opacity-50">{op.pc}</span>}
-                    <span className="font-bold">{op.mnemonic}</span>
-                    {op.args && <span className="ml-2 opacity-75">{op.args}</span>}
-                  </div>
-                ))}
-                <div className="text-gray-500">...</div>
+                <div className="text-gray-600 italic text-center py-4">
+                  {/* Real opcodes will need to be fetched/displayed here */}
+                  No contract code loaded
+                </div>
               </div>
             </Card>
 
@@ -611,15 +607,14 @@ export default function App() {
             {/* Transient Storage */}
             <Card title="Transient Storage">
               <div className="h-24 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3 font-mono text-xs text-cyan-600 dark:text-cyan-400">
-                <div>0xab: 0x42</div>
+                <div className="text-gray-400 italic text-center p-2">Empty</div>
               </div>
             </Card>
 
             {/* Storage */}
             <Card title="Storage">
               <div className="h-28 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3 font-mono text-xs text-purple-600 dark:text-purple-400">
-                <div>0x00: 0x0</div>
-                <div>0x01: 0xdead</div>
+                <div className="text-gray-400 italic text-center p-2">Empty</div>
               </div>
             </Card>
           </div>
