@@ -120,83 +120,7 @@ export default function App() {
 
   // --- ADAPTERS (To match existing UI Props) ---
 
-  // --- VISUAL STACK LOGIC (App Level) ---
-  // State to hold exactly 2 items: [Previous (Red), Current (Green)]
-  const [visualStack, setVisualStack] = useState<{ prev: any | null, curr: any | null }>({ prev: null, curr: null });
-  const lastStepRef = useRef<number>(-1);
 
-  // Reset visual stack when status changes (e.g. reload)
-  useEffect(() => {
-    if (status === "Loading" || currentStep === 0) {
-      setVisualStack({ prev: null, curr: null });
-      lastStepRef.current = -1;
-    }
-  }, [status, currentStep]);
-
-  useEffect(() => {
-    // Only update if Step has changed
-    if (currentStep !== lastStepRef.current) {
-      const topItem = stack[0]; // Raw stack top
-
-      setVisualStack(old => {
-        // If it's a reset (step 0), clean up.
-        if (currentStep === 0) return { prev: null, curr: topItem ? { ...topItem, _vid: `v-0` } : null };
-
-        // New "Current" is the new top
-        // New "Previous" is the OLD "Current"
-        return {
-          prev: old.curr, // Shift current to previous
-          curr: topItem ? { ...topItem, _vid: `v-${currentStep}` } : null
-        };
-      });
-      lastStepRef.current = currentStep;
-    }
-  }, [currentStep, stack]);
-
-  // Transform for display: 
-  // 1. Previous (Red) - Ghost
-  // 2. Current (Green) - Top of Stack
-  // 3. Rest of Stack (Neutral) - items[1..n]
-  const displayItems: StackItem[] = [];
-
-  if (visualStack.prev) {
-    displayItems.push({
-      ...visualStack.prev,
-      status: 'consumed',
-      isPopped: true,
-      label: visualStack.prev.label || 'prev'
-    });
-  }
-
-  if (visualStack.curr) {
-    displayItems.push({
-      ...visualStack.curr,
-      status: 'produced',
-      isPopped: false,
-      label: visualStack.curr.label || 'curr'
-    });
-  }
-
-  // Smart Slice: Avoid duplicating 'prev' if it's still in the stack (index 1)
-  // This happens on PUSH (Top -> new 2nd item).
-  // On POP, the old top is gone, so stack[1] is different.
-  let sliceIndex = 1;
-  if (stack.length > 1 && visualStack.prev && stack[1].value === visualStack.prev.value) {
-    sliceIndex = 2;
-  }
-
-  // Append the rest of the stack
-  if (stack.length >= sliceIndex) {
-    stack.slice(sliceIndex).forEach((item, index) => {
-      displayItems.push({
-        value: item.value,
-        label: item.label || `stack[${index + sliceIndex}]`,
-        status: 'neutral', // Neutral color
-        isPopped: false,
-        modifiedAt: item.modifiedAt
-      });
-    });
-  }
 
   // Memory Adapter
   // (Assuming memory from hook matches MemorySegment interface, which we control in state)
@@ -631,6 +555,35 @@ export default function App() {
                 visibleStack={visibleStack}
                 historyLength={stackHistoryLength}
                 fullHistory={stackHistory}
+                neutralItems={(() => {
+                  try {
+                    // Smart Slice Calculation for Neutral Items (Rest of Stack)
+                    // Depends on visibleStack.previous (Red item)
+                    const prevVal = visibleStack?.previous?.value;
+                    let sliceIndex = 1;
+
+                    // Safety check on stack
+                    if (!stack || !Array.isArray(stack)) return [];
+
+                    // Check for duplicate of Red item
+                    if (stack.length > 1 && prevVal && stack[1]?.value === prevVal) {
+                      sliceIndex = 2;
+                    }
+
+                    // Return slice of raw stack
+                    return stack.slice(sliceIndex).map((item, index) => {
+                      if (!item) return null;
+                      return {
+                        ...item,
+                        label: item.label || `stack[${index + sliceIndex}]`,
+                        status: 'neutral' as const
+                      };
+                    }).filter(Boolean) as StackItem[];
+                  } catch (err) {
+                    console.error("Error calculating neutralItems:", err);
+                    return [];
+                  }
+                })()}
                 className="max-h-64"
               />
             </Card>

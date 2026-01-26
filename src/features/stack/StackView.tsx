@@ -10,6 +10,7 @@ interface StackViewProps {
     visibleStack: VisibleStackWindow;
     historyLength: number;
     fullHistory?: StackItem[];
+    neutralItems?: StackItem[]; // Rest of the stack (non-active)
     className?: string;
 }
 
@@ -97,10 +98,10 @@ function HistoryModal({
     );
 }
 
-export default function StackView({ visibleStack, historyLength, fullHistory = [], className = "" }: StackViewProps) {
+export default function StackView({ visibleStack, historyLength, fullHistory = [], neutralItems, className = "" }: StackViewProps) {
     const [showModal, setShowModal] = useState(false);
 
-    const { current, previous } = visibleStack;
+    const { current, previous } = visibleStack || { current: null, previous: null };
     const hiddenCount = historyLength - 2;
 
     return (
@@ -141,6 +142,21 @@ export default function StackView({ visibleStack, historyLength, fullHistory = [
                         </div>
                     </div>
                 )}
+
+                {/* Neutral items (Rest of stack) */}
+                {Array.isArray(neutralItems) && neutralItems.length > 0 && neutralItems.map((item, idx) => (
+                    item ? (
+                        <div key={idx} className="grid grid-cols-[1fr_auto] bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800/50">
+                            <div className="px-4 py-3">
+                                <span className="text-gray-400 dark:text-gray-600 font-medium">{item.label || `stack[${idx}]`} : </span>
+                                <span className="font-mono text-gray-600 dark:text-gray-400 text-sm break-all">{item.value}</span>
+                            </div>
+                            <div className="px-4 py-3 text-gray-400 dark:text-gray-500 text-sm text-center min-w-[100px] flex items-center justify-center">
+                                {item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : "-"}
+                            </div>
+                        </div>
+                    ) : null
+                ))}
 
                 {/* Empty state */}
                 {!current && !previous && (

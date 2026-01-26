@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { ApolloDebuggerAPI, DebuggerState, Breakpoint } from '../types/ApolloAPI';
+import type { DebuggerState, Breakpoint, InstructionInfo, MemorySegment } from '../types/ApolloAPI';
 import type { StackItem } from '../types/StackItem';
+import type { transaction_info, trace_iterator, log_infos, stack as EngineStack } from '../types/ApolloEngine';
 
 export type ApolloStatus = "Ready" | "Loading" | "Error";
 
@@ -10,68 +11,156 @@ export interface VisibleStackWindow {
     previous: StackItem | null; // Red - previous step
 }
 
-/**
- * useApollo Hook
- * Connects to the global ApolloDebuggerAPI exposed by the OCaml engine.
- * Manages the connection status and syncs the debugger state with React.
- */
-export const useApollo = () => {
-    // 1. Local State mirroring the Engine
-    const [status, setStatus] = useState<ApolloStatus>("Loading");
-    const [state, setState] = useState<DebuggerState | null>(null);
-    const [engine, setEngine] = useState<ApolloDebuggerAPI | null>(null);
+const CONFIG = {
+    node_url: "https://app.functori.com/reth",
+    tx_hash: "0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"
+};
 
-    // 2. Stack History Tracking
+// Helper: Map Engine Stack to UI StackItem
+const mapStack = (engineStack: EngineStack): StackItem[] => {
+    return engineStack.map((item, index) => ({
+        value: item.value,
+        label: `stack[${index}]`,
+        status: 'neutral', // default
+        modifiedAt: { pc: 0, opcode: 'UNKNOWN' } // We might need to fetch this from log_map if available
+    }));
+};
+
+// Helper: Map Engine Log to DebuggerState
+const mapLogToState = (log: log_infos | undefined, totalSteps: number, currentStep: number): DebuggerState => {
+    if (!log) {
+        return {
+            currentStep: 0,
+            totalSteps,
+            pcCoverage: 0,
+            currentInstruction: null,
+            nextInstruction: null,
+            stack: [],
+            memory: [],
+            isLoading: false,
+            error: null,
+            traceId: null
+        };
+    }
+
+    const currentInstr: InstructionInfo = {
+        pc: log.next_instr.pc,
+        opcode: log.next_instr.op,
+        gas: Number(log.remaining_gas), // BigInt to Number (careful with precision)
+        gasCost: Number(log.next_instr.gas_cost),
+        stepNumber: currentStep,
+        totalSteps: totalSteps,
+        description: `Executed ${log.next_instr.op}`,
+        memoryMappings: [], // TODO: extract if available
+        memoryChanges: []   // TODO: extract from log.next_instr.memory_update
+    };
+
+    // Map Memory (simplification for now)
+    // The engine provides `log.exec_state.memory` which is `{ value: ArrayBuffer, log_ids: ... }`
+    // We need to convert ArrayBuffer to MemorySegment[] for the UI.
+    const memorySegments: MemorySegment[] = [];
+    // TODO: Implement proper memory parsing from ArrayBuffer if needed for visualization
+
+    return {
+        currentStep,
+        totalSteps,
+        pcCoverage: 0, // TODO: calculate based on code coverage
+        currentInstruction: currentInstr,
+        nextInstruction: null, // engine iterator doesn't peek next easily without stepping
+        stack: mapStack(log.exec_state.stack),
+        memory: memorySegments,
+        isLoading: false,
+        error: null,
+        traceId: CONFIG.tx_hash
+    };
+};
+
+export const useApollo = () => {
+    // 1. Core Engine State
+    const [status, setStatus] = useState<ApolloStatus>("Loading");
+    const [txInfo, setTxInfo] = useState<transaction_info | null>(null);
+    const [iterator, setIterator] = useState<trace_iterator | null>(null);
+
+    // 2. UI State
+    const [state, setState] = useState<DebuggerState | null>(null);
+    const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+    // 3. Stack History Tracking (Preserved logic)
     const [stackHistory, setStackHistory] = useState<StackItem[]>([]);
     const lastStepRef = useRef<number>(-1);
 
-    // 3. Initialization & Subscription (The Plumbing)
+    // 4. Initialization
     useEffect(() => {
-        const api = window.ApolloDebugger;
-
-        if (api) {
-            setEngine(api);
-            setStatus("Ready");
-            setState(api.getCurrentState());
-
-            const unsubscribe = api.subscribe((newState) => {
-                setState({ ...newState });
-                if (newState.error) {
-                    setStatus("Error");
-                } else if (newState.isLoading) {
-                    setStatus("Loading");
-                } else {
-                    setStatus("Ready");
+        const initEngine = async () => {
+            try {
+                if (typeof Apollo === 'undefined') {
+                    throw new Error("Apollo global not found. Is apollo-engine.js loaded?");
                 }
-            });
+                console.log("Loading transaction...", CONFIG);
+                const info = await Apollo.load_transaction(CONFIG);
+                console.log("Transaction loaded:", info);
 
-            return () => unsubscribe();
-        } else {
-            console.error("Apollo Debugger Engine not found!");
-            setStatus("Error");
-        }
+                setTxInfo(info);
+                setIterator(info.trace_iterator);
+                setStatus("Ready");
+
+                // Set initial state
+                const initialLog = info.trace_iterator.current_log();
+                setState(mapLogToState(initialLog, info.trace.length, 0)); // Approx total steps from trace length
+
+            } catch (err: any) {
+                console.error("Failed to initialize Apollo:", err);
+                setStatus("Error");
+            }
+        };
+
+        initEngine();
     }, []);
 
-    // 4. Update stack history when step changes
+    // 5. Update stack history when step changes (Preserved logic)
     useEffect(() => {
         const currentStep = state?.currentStep ?? -1;
         const stackArr = state?.stack || [];
-        // Get the LAST item (newest) from the stack, not stack[0]
         const latestItem = stackArr[stackArr.length - 1];
 
         if (currentStep !== lastStepRef.current && latestItem) {
             if (currentStep > lastStepRef.current) {
-                // Moving forward: add to history
                 setStackHistory(prev => [...prev, latestItem]);
             } else if (currentStep < lastStepRef.current) {
-                // Moving backward: remove from history
                 setStackHistory(prev => prev.slice(0, -1));
             }
             lastStepRef.current = currentStep;
         }
     }, [state?.currentStep, state?.stack]);
 
-    // 5. Compute visible stack window (2 items max)
+    // 6. Navigation Actions (Real Engine)
+    const next = useCallback(() => {
+        if (!iterator || !txInfo) return;
+        const hasNext = iterator.next();
+        if (hasNext) {
+            const log = iterator.current_log();
+            const newIndex = currentStepIndex + 1;
+            setCurrentStepIndex(newIndex);
+            setState(mapLogToState(log, txInfo.trace.length, newIndex)); // Note: trace length is approx total steps
+        }
+    }, [iterator, txInfo, currentStepIndex]);
+
+    const prev = useCallback(() => {
+        if (!iterator || !txInfo) return;
+        const hasPrev = iterator.prev();
+        if (hasPrev) {
+            const log = iterator.current_log();
+            const newIndex = currentStepIndex - 1;
+            setCurrentStepIndex(newIndex);
+            setState(mapLogToState(log, txInfo.trace.length, newIndex));
+        }
+    }, [iterator, txInfo, currentStepIndex]);
+
+    const setBreakpoint = useCallback((bp: Breakpoint) => {
+        console.warn("Breakpoints not yet implemented for Real Engine");
+    }, []);
+
+    // 7. Computed Data
     const visibleStack: VisibleStackWindow = useMemo(() => {
         const len = stackHistory.length;
         return {
@@ -80,21 +169,7 @@ export const useApollo = () => {
         };
     }, [stackHistory]);
 
-    // 6. Action Wrappers
-    const next = useCallback(() => engine?.next(), [engine]);
-    const prev = useCallback(() => engine?.prev(), [engine]);
-    const setBreakpoint = useCallback((bp: Breakpoint) => engine?.setBreakpoint(bp), [engine]);
-
-    // Simplified Accessors
-    const currentOpcode = state?.currentInstruction?.opcode;
-    const currentStep = state?.currentStep || 0;
-
-    // Data extractors
-    const rawStack = state?.stack || [];
-    const memory = state?.memory || [];
-    const nextInstruction = state?.nextInstruction || null;
-
-    // 7. Auto-Play Logic
+    // 8. Auto-Play Logic
     const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);
     const [speed, setSpeed] = useState(40);
 
@@ -117,24 +192,20 @@ export const useApollo = () => {
     return {
         status,
         rawState: state,
-        currentStep,
-        currentOpcode,
-        stack: rawStack,
-        memory,
-        nextInstruction,
+        currentStep: currentStepIndex,
+        currentOpcode: state?.currentInstruction?.opcode,
+        stack: state?.stack || [],
+        memory: state?.memory || [],
+        nextInstruction: state?.nextInstruction || null,
 
-        // Sliding Window Stack
         visibleStack,
         stackHistoryLength: stackHistory.length,
-        stackHistory, // Full history for expandable panel
+        stackHistory,
 
-        // Actions
         next,
         prev,
         setBreakpoint,
 
-
-        // Auto-Play
         isPlaying,
         togglePlay,
         speed,
