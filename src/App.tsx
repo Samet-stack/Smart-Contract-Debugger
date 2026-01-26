@@ -51,7 +51,12 @@ export default function App() {
     isPlaying,
     togglePlay,
     speed,
-    setSpeed
+    setSpeed,
+
+    // Sliding Window Stack
+    visibleStack,
+    stackHistoryLength,
+    stackHistory
   } = useApollo();
 
   // --- AUTO-PLAY ENGINE (Manual Interval for UI Control) ---
@@ -215,7 +220,19 @@ export default function App() {
       functionSelector: "swap(...)",
       callData: "0x...",
     } : null,
-    nextInstrToRun: null // Simple view: current is last run
+    // Wire nextInstruction from the hook
+    nextInstrToRun: nextInstruction ? {
+      number: (nextInstruction.stepNumber ?? 0),
+      total: rawState?.totalSteps ?? 0,
+      pc: nextInstruction.pc,
+      opcode: nextInstruction.opcode,
+      gas: nextInstruction.gas,
+      gasCost: nextInstruction.gasCost,
+      memoryMappings: nextInstruction.memoryMappings || [],
+      memoryChanges: nextInstruction.memoryChanges || [],
+      functionSelector: "swap(...)",
+      callData: "0x...",
+    } : null
   };
 
 
@@ -610,7 +627,12 @@ export default function App() {
           <div className="col-span-12 md:col-span-12 lg:col-span-4 space-y-4">
             {/* Stack */}
             <Card title="Stack">
-              <StackView items={displayItems} className="max-h-64" />
+              <StackView
+                visibleStack={visibleStack}
+                historyLength={stackHistoryLength}
+                fullHistory={stackHistory}
+                className="max-h-64"
+              />
             </Card>
 
             {/* Combined Memory & Mappings Card */}

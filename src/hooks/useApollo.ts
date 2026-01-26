@@ -1,7 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ApolloDebuggerAPI, DebuggerState, Breakpoint } from '../types/ApolloAPI';
+import type { StackItem } from '../types/StackItem';
 
 export type ApolloStatus = "Ready" | "Loading" | "Error";
+
+// Type for the visible stack window
+export interface VisibleStackWindow {
+    current: StackItem | null;  // Green - current step
+    previous: StackItem | null; // Red - previous step
+}
 
 /**
  * useApollo Hook
@@ -14,7 +21,11 @@ export const useApollo = () => {
     const [state, setState] = useState<DebuggerState | null>(null);
     const [engine, setEngine] = useState<ApolloDebuggerAPI | null>(null);
 
-    // 2. Initialization & Subscription (The Plumbing)
+    // 2. Stack History Tracking
+    const [stackHistory, setStackHistory] = useState<StackItem[]>([]);
+    const lastStepRef = useRef<number>(-1);
+
+    // 3. Initialization & Subscription (The Plumbing)
     useEffect(() => {
         const api = window.ApolloDebugger;
 
@@ -24,9 +35,6 @@ export const useApollo = () => {
             setState(api.getCurrentState());
 
             const unsubscribe = api.subscribe((newState) => {
-                // Force new object reference to ensure React triggers re-render
-                // checking against previous state to avoid infinite loops if needed, 
-                // but spreading is safer for now.
                 setState({ ...newState });
                 if (newState.error) {
                     setStatus("Error");
@@ -44,7 +52,35 @@ export const useApollo = () => {
         }
     }, []);
 
-    // 3. Action Wrappers
+    // 4. Update stack history when step changes
+    useEffect(() => {
+        const currentStep = state?.currentStep ?? -1;
+        const stackArr = state?.stack || [];
+        // Get the LAST item (newest) from the stack, not stack[0]
+        const latestItem = stackArr[stackArr.length - 1];
+
+        if (currentStep !== lastStepRef.current && latestItem) {
+            if (currentStep > lastStepRef.current) {
+                // Moving forward: add to history
+                setStackHistory(prev => [...prev, latestItem]);
+            } else if (currentStep < lastStepRef.current) {
+                // Moving backward: remove from history
+                setStackHistory(prev => prev.slice(0, -1));
+            }
+            lastStepRef.current = currentStep;
+        }
+    }, [state?.currentStep, state?.stack]);
+
+    // 5. Compute visible stack window (2 items max)
+    const visibleStack: VisibleStackWindow = useMemo(() => {
+        const len = stackHistory.length;
+        return {
+            current: len > 0 ? { ...stackHistory[len - 1], status: 'produced' as const } : null,
+            previous: len > 1 ? { ...stackHistory[len - 2], status: 'consumed' as const } : null
+        };
+    }, [stackHistory]);
+
+    // 6. Action Wrappers
     const next = useCallback(() => engine?.next(), [engine]);
     const prev = useCallback(() => engine?.prev(), [engine]);
     const setBreakpoint = useCallback((bp: Breakpoint) => engine?.setBreakpoint(bp), [engine]);
@@ -56,10 +92,9 @@ export const useApollo = () => {
     // Data extractors
     const rawStack = state?.stack || [];
     const memory = state?.memory || [];
+    const nextInstruction = state?.nextInstruction || null;
 
-
-
-    // 4. Auto-Play Logic
+    // 7. Auto-Play Logic
     const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);
     const [speed, setSpeed] = useState(40);
 
@@ -84,13 +119,20 @@ export const useApollo = () => {
         rawState: state,
         currentStep,
         currentOpcode,
-        stack: rawStack, // Return RAW stack
+        stack: rawStack,
         memory,
+        nextInstruction,
+
+        // Sliding Window Stack
+        visibleStack,
+        stackHistoryLength: stackHistory.length,
+        stackHistory, // Full history for expandable panel
 
         // Actions
         next,
         prev,
         setBreakpoint,
+
 
         // Auto-Play
         isPlaying,

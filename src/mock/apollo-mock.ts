@@ -122,11 +122,26 @@ class ApolloMock implements ApolloDebuggerAPI {
             this.state.nextInstruction = null;
         }
 
-        // Simuler la stack qui bouge
+        // Simuler la stack qui bouge avec valeurs hex réalistes variées
         if (direction > 0) {
+            const opcodes = ["PUSH1", "PUSH2", "DUP1", "ADD", "MUL", "SWAP1", "SLOAD", "SSTORE", "CALL", "JUMP"];
+            // Generate varied realistic hex values
+            const patterns = [
+                () => (newStep * 12345).toString(16),           // Simple multiplication
+                () => (newStep * 0xdeadbeef % 0xffffffff).toString(16), // Pattern with deadbeef
+                () => (Math.pow(2, newStep % 256)).toString(16), // Powers of 2
+                () => `${newStep}`.repeat(8),                   // Repeated digits
+                () => (0x1000000000000000n + BigInt(newStep * 999)).toString(16), // Large number
+            ];
+            const hexValue = patterns[newStep % patterns.length]();
             this.state.stack.push({
-                value: `0x${(newStep * 12345).toString(16).padStart(64, '0')}`,
-                status: "produced"
+                value: `0x${hexValue.padStart(64, '0')}`,
+                label: `stack[${this.state.stack.length}]`,
+                status: "produced",
+                modifiedAt: {
+                    pc: newStep * 2,
+                    opcode: opcodes[newStep % opcodes.length]
+                }
             });
         } else {
             this.state.stack.pop();
