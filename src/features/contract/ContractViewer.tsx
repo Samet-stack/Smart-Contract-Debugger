@@ -6,9 +6,11 @@ import type { ContractOpcode } from "../../hooks/useApollo";
 interface ContractViewerProps {
     code: ContractOpcode[];
     currentPc: number | undefined;
+    isExternalContract?: boolean;
+    externalAddress?: string;
 }
 
-export default function ContractViewer({ code, currentPc }: ContractViewerProps) {
+export default function ContractViewer({ code, currentPc, isExternalContract, externalAddress }: ContractViewerProps) {
     const activeRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -39,18 +41,29 @@ export default function ContractViewer({ code, currentPc }: ContractViewerProps)
                 <span className="text-3xl mb-2 opacity-20">📝</span>
                 <p className="font-semibold text-sm">External Contract</p>
                 <p className="text-xs font-mono mt-1 opacity-70 break-all">
-                    {/* We need to pass address to display it here, or just generic message */}
-                    Code not available for this address
+                    {externalAddress ? `Executing at ${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}` : "Code not available for this address"}
                 </p>
             </div>
         );
     }
 
     return (
-        <div
-            ref={containerRef}
-            className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed h-full"
-        >
+        <div className="flex flex-col h-full">
+            {/* External Contract Banner */}
+            {isExternalContract && (
+                <div className="bg-orange-100 dark:bg-orange-900/30 border-b border-orange-200 dark:border-orange-800 px-3 py-2 text-xs">
+                    <span className="text-orange-700 dark:text-orange-300 font-medium">
+                        ⚠️ External Call - Executing at:
+                    </span>
+                    <span className="font-mono text-orange-600 dark:text-orange-400 ml-1">
+                        {externalAddress ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}` : "unknown"}
+                    </span>
+                </div>
+            )}
+            <div
+                ref={containerRef}
+                className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed"
+            >
             <div className="space-y-0.5">
                 {code.map((op, index) => {
                     const isCurrentPc = currentPc === op.pc;
@@ -86,6 +99,7 @@ export default function ContractViewer({ code, currentPc }: ContractViewerProps)
                     );
                 })}
             </div>
+        </div>
         </div>
     );
 }

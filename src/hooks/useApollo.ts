@@ -194,6 +194,17 @@ const mapLogToState = (
     // Dynamic total steps to allow exceeding initial estimate
     const effectiveTotalSteps = Math.max(totalSteps, currentStep + 1);
 
+    const memoryChanges = log.next_instr.memory_update?.map(mu => ({
+        offset: Number(mu.offset),
+        size: Number(mu.size)
+    })) || [];
+
+    const memoryMappings = memoryChanges.map(mc => ({
+        range: `[${mc.offset};${mc.offset + mc.size}]`,
+        pc: log.next_instr.pc,
+        opcode: log.next_instr.op
+    }));
+
     const currentInstr: InstructionInfo = {
         pc: log.next_instr.pc,
         opcode: log.next_instr.op,
@@ -202,11 +213,14 @@ const mapLogToState = (
         stepNumber: currentStep + 1, // 1-based index for display
         totalSteps: effectiveTotalSteps,
         description: `Executed ${log.next_instr.op}`,
-        memoryMappings: [],
-        memoryChanges: log.next_instr.memory_update?.map(mu => ({
-            offset: Number(mu.offset),
-            size: Number(mu.size)
-        })) || []
+        memoryMappings,
+        memoryChanges,
+        // Last conditional jump (pc only from engine)
+        lastConditionalJump: log.last_conditional_jump !== undefined ? {
+            pc: log.last_conditional_jump,
+            opcode: "JUMPI",
+            condition: "" // Condition not available in current API
+        } : undefined
     };
 
     // Map Stack
@@ -331,12 +345,87 @@ export const useApollo = () => {
     // 8. Current log reference for extracting all data
     const currentLogRef = useRef<log_infos | null>(null);
 
+    // 8.5. Previous instruction log (from peek backward) - for LAST_RUN_INSTR
+    const [prevLogData, setPrevLogData] = useState<log_infos | null>(null);
+    const [nextInstruction, setNextInstruction] = useState<InstructionInfo | null>(null);
+
+    const mapLogToInstruction = useCallback((
+        log: log_infos,
+        stepIndex: number,
+        totalSteps: number
+    ): InstructionInfo => {
+        const memoryChanges = log.next_instr.memory_update?.map(mu => ({
+            offset: Number(mu.offset),
+            size: Number(mu.size)
+        })) || [];
+
+        const memoryMappings = memoryChanges.map(mc => ({
+            range: `[${mc.offset};${mc.offset + mc.size}]`,
+            pc: log.next_instr.pc,
+            opcode: log.next_instr.op
+        }));
+
+        return {
+            pc: log.next_instr.pc,
+            opcode: log.next_instr.op,
+            gas: Number(log.remaining_gas),
+            gasCost: Number(log.next_instr.gas_cost),
+            stepNumber: stepIndex + 1, // 1-based display
+            totalSteps,
+            description: `Executed ${log.next_instr.op}`,
+            memoryMappings,
+            memoryChanges,
+            depth: log.depth,
+            address: log.address,
+            callData: log.call_data?.value ? bufferToHex(log.call_data.value) : "",
+            functionSelector: log.selector ? bufferToHex(log.selector) : "",
+            lastConditionalJump: log.last_conditional_jump !== undefined ? {
+                pc: log.last_conditional_jump,
+                opcode: "JUMPI",
+                condition: ""
+            } : undefined
+        };
+    }, []);
+
     // Update all state from current log
     // Warning: 'initialTotalSteps' arg here is the initial trace length
-    const updateFromLog = useCallback((log: log_infos | undefined, initialTotalSteps: number, stepIndex: number, txHash: string, logMap?: Map<number, log_infos>) => {
+    // iter is optional - if provided, we'll peek the next instruction
+    const updateFromLog = useCallback((
+        log: log_infos | undefined,
+        initialTotalSteps: number,
+        stepIndex: number,
+        txHash: string,
+        logMap?: Map<number, log_infos>,
+        iter?: trace_iterator
+    ) => {
         if (!log) return;
 
         currentLogRef.current = log;
+
+        // PEEK BACKWARD: Get the PREVIOUS instruction (what just ran)
+        // Because log.next_instr is the instruction ABOUT to run,
+        // to show "LAST_RUN_INSTR" we need the previous step's next_instr
+        let prevLog: log_infos | null = null;
+        if (iter && stepIndex > 0) {
+            const hasPrev = iter.prev();
+            if (hasPrev) {
+                prevLog = iter.current_log() || null;
+                iter.next(); // Rewind back to current position
+            }
+        }
+
+        // DEBUG: Compare prev vs current
+        console.log("[PEEK DEBUG] Semantic Fix:", {
+            prevPC: prevLog?.next_instr.pc,
+            prevOp: prevLog?.next_instr.op,
+            prevGas: prevLog ? Number(prevLog.remaining_gas) : null,
+            currentPC: log.next_instr.pc,
+            currentOp: log.next_instr.op,
+            currentGas: Number(log.remaining_gas),
+            stepIndex
+        });
+
+        setPrevLogData(prevLog);
 
         // Update dynamic total steps if we exceed current known max
         setDynamicTotalSteps(prev => {
@@ -368,6 +457,7 @@ export const useApollo = () => {
 
         // Update main debugger state
         setState(mapLogToState(log, effectiveTotal, stepIndex, txHash, logMap));
+        setNextInstruction(mapLogToInstruction(log, stepIndex, effectiveTotal));
 
         // Update Storage (for standalone hook variable)
         const storageUpd = log.next_instr.storage_update;
@@ -418,18 +508,8 @@ export const useApollo = () => {
             other: log.gas_used.other_contracts.toString()
         });
 
-        // Try to determine Next Instruction (Naive approach using PC + Code)
-        // Since we don't have peek(), we look at the contract code.
-        // Find current instruction in code by PC
-        const currentPc = log.next_instr.pc;
-        // Access code from state or valid source needed here. 
-        // We can't access 'contractCode' state easily inside callback without deps.
-        // We'll pass contractCode to this function or use a ref.
-        // For now, let's leave nextInstruction null in state, but we can compute it in the view or here if we had code.
-
-
-
-    }, []);
+        // Next instruction is derived from current log (next_instr).
+    }, [mapLogToInstruction]);
 
     // 9. Initialization
     const loadTransaction = useCallback(async (hash: string) => {
@@ -442,6 +522,7 @@ export const useApollo = () => {
         setTransientStorage([]);
         setContractCode([]);
         setTransactionDetails(null);
+        setNextInstruction(null);
         lastStepRef.current = -1;
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
 
@@ -525,7 +606,8 @@ export const useApollo = () => {
             console.log(`Initializing with TotalSteps: ${calculatedTotal}`);
 
             // Use calculatedTotal as the Single Source of Truth
-            updateFromLog(initialLog, calculatedTotal, 0, hash, info.log_map);
+            // Pass iterator for peek functionality
+            updateFromLog(initialLog, calculatedTotal, 0, hash, info.log_map, info.trace_iterator);
             setDynamicTotalSteps(calculatedTotal);
             setCurrentStepIndex(0);
 
@@ -604,8 +686,8 @@ export const useApollo = () => {
             const newIndex = currentStepIndex + 1;
             setCurrentStepIndex(newIndex);
             // Use dynamicTotalSteps to preserve the pre-calculated count
-            // Fallback to trace.length if dynamic is 0 (should not happen if loaded)
-            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
+            // Pass iterator for peek functionality
+            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
         } else {
             console.warn("Iterator returned false for next()");
         }
@@ -618,7 +700,8 @@ export const useApollo = () => {
             const log = iterator.current_log();
             const newIndex = currentStepIndex - 1;
             setCurrentStepIndex(newIndex);
-            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
+            // Pass iterator for peek functionality
+            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
 
@@ -660,80 +743,61 @@ export const useApollo = () => {
         return currentLogRef.current;
     }, []);
 
-    // 14.5. Dynamic Contract Code Switching
+    // 14.5. Track if we're in an external contract (don't clear code, just track it)
+    const isExternalContract = useMemo(() => {
+        if (!address || !txInfo?.transaction.info.dst) return false;
+        return address.toLowerCase() !== txInfo.transaction.info.dst.toLowerCase();
+    }, [address, txInfo?.transaction.info.dst]);
+
+    // Restore main contract code when returning from external call
     useEffect(() => {
-        if (!state?.currentInstruction || !txInfo) return;
+        if (!txInfo) return;
 
-        // If we are executing in a different address than the main contract,
-        // and we don't have code for it (currently we only load main contract code),
-        // we should clear the code view to avoid misleading highlighting.
-        if (address && txInfo.transaction.info.dst) {
-            const isMainContract = address.toLowerCase() === txInfo.transaction.info.dst.toLowerCase();
-
-            if (isMainContract) {
-                // Restore main contract code if not already set or if it was cleared
-                if (contractCode.length === 0 && txInfo.code) {
-                    setContractCode(mapContractCode(txInfo.code));
-                }
-            } else {
-                // External contract: Clear code if it's currently showing main contract code
-                if (contractCode.length > 0) {
-                    setContractCode([]);
-                }
-            }
+        // If we're back in main contract and code was somehow lost, restore it
+        if (!isExternalContract && contractCode.length === 0 && txInfo.code) {
+            setContractCode(mapContractCode(txInfo.code));
         }
-    }, [address, txInfo]);
+    }, [isExternalContract, txInfo]);
 
-    // 15. Derive Next Instruction from Code
-    const derivedNextInstruction = useMemo(() => {
-        if (!state?.currentInstruction) return null;
+    // 15. Derive LAST INSTRUCTION (what just executed) from prevLogData
+    const derivedLastInstruction = useMemo((): InstructionInfo | null => {
+        // At step 0, there's no previous instruction
+        if (!prevLogData || currentStepIndex === 0) return null;
 
-        // Fallback for when code is not available (External Contract)
-        const fallbackNext: InstructionInfo = {
-            pc: 0,
-            opcode: "UNKNOWN",
-            gas: state.currentInstruction.gas,
-            gasCost: 0,
-            stepNumber: (state.currentStep || 0) + 1,
-            totalSteps: state.totalSteps,
-            description: "Next instruction not available (external source)",
-            // Pass through context data that remains valid
-            depth: state.currentInstruction.depth,
-            callData: callData,
-            functionSelector: selector,
-            memoryMappings: [],
-            memoryChanges: []
+        const lastInstr = prevLogData.next_instr;
+        const lastMemoryChanges = lastInstr.memory_update?.map(mu => ({
+            offset: Number(mu.offset),
+            size: Number(mu.size)
+        })) || [];
+        const lastMemoryMappings = lastMemoryChanges.map(mc => ({
+            range: `[${mc.offset};${mc.offset + mc.size}]`,
+            pc: lastInstr.pc,
+            opcode: lastInstr.op
+        }));
+
+        return {
+            pc: lastInstr.pc,
+            opcode: lastInstr.op,
+            gas: Number(prevLogData.remaining_gas),
+            gasCost: Number(lastInstr.gas_cost),
+            stepNumber: currentStepIndex, // The step that just ran
+            totalSteps: dynamicTotalSteps || state?.totalSteps || 0,
+            description: `Executed ${lastInstr.op}`,
+            depth: prevLogData.depth,
+            address: prevLogData.address,
+            callData: prevLogData.call_data?.value ? bufferToHex(prevLogData.call_data.value) : "",
+            functionSelector: prevLogData.selector ? bufferToHex(prevLogData.selector) : "",
+            memoryMappings: lastMemoryMappings,
+            memoryChanges: lastMemoryChanges,
+            lastConditionalJump: prevLogData.last_conditional_jump ? {
+                pc: prevLogData.last_conditional_jump,
+                opcode: "JUMPI",
+                condition: ""
+            } : undefined
         };
+    }, [prevLogData, currentStepIndex, dynamicTotalSteps, state?.totalSteps]);
 
-        if (contractCode.length === 0) {
-            return fallbackNext;
-        }
-
-        const currentPc = state.currentInstruction.pc;
-        // Find index of current opcode
-        const currentIndex = contractCode.findIndex(op => op.pc === currentPc);
-
-        // If found and not last, return next
-        if (currentIndex !== -1 && currentIndex < contractCode.length - 1) {
-            const nextOp = contractCode[currentIndex + 1];
-            return {
-                pc: nextOp.pc,
-                opcode: nextOp.op,
-                // Correctly populate step metadata
-                gas: state.currentInstruction.gas,
-                gasCost: 0,
-                stepNumber: (state.currentStep || 0) + 1,
-                totalSteps: state.totalSteps,
-                description: "Next instruction",
-                depth: state.currentInstruction.depth,
-                callData: callData,
-                functionSelector: selector,
-                memoryMappings: [], memoryChanges: []
-            } as InstructionInfo;
-        }
-
-        return fallbackNext;
-    }, [state?.currentInstruction?.pc, state?.currentStep, state?.totalSteps, contractCode]);
+    const derivedNextInstruction = nextInstruction;
 
     return {
         // Load
@@ -777,8 +841,10 @@ export const useApollo = () => {
         depth,
         address,
         gasUsed,
+        isExternalContract,
 
-        // Next Instruction
+        // Instructions (LAST = what ran, NEXT = what's about to run)
+        lastInstruction: derivedLastInstruction,
         nextInstruction: derivedNextInstruction,
 
         // Navigation

@@ -80,6 +80,15 @@ function InstructionBlock({ title, instr, showContext = true, showMemoryChanges 
                     {instr.depth !== undefined && <InfoRow label="depth:" value={instr.depth} />}
                 </div>
 
+                {instr.address && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500 text-xs">@:</span>
+                        <p className="font-mono text-xs text-gray-700 dark:text-gray-300 mt-1 break-all">
+                            {instr.address}
+                        </p>
+                    </div>
+                )}
+
                 {/* Function selector & Call data - Conditional */}
                 {showContext && (
                     <>

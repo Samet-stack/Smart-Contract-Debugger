@@ -48,6 +48,7 @@ export default function App() {
     prev,
     setBreakpoint,
 
+    lastInstruction,
     nextInstruction,
     // Auto-Play
     isPlaying,
@@ -79,7 +80,8 @@ export default function App() {
     // NEW: Context Info
     depth,
     address,
-    gasUsed
+    gasUsed,
+    isExternalContract
   } = useApollo();
 
   const [txHash, setTxHash] = useState("0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"); // Default hash for demo
@@ -158,38 +160,45 @@ export default function App() {
   const memorySegments: MemorySegment[] = memory;
 
   // TxInstrs Adapter (Dynamic from Hook)
+  // SEMANTIC FIX:
+  // - lastInstruction = what JUST EXECUTED (from previous step's next_instr)
+  // - nextInstruction = what's ABOUT TO EXECUTE (from current step's next_instr)
   const txInstrsData: TxInstrs = {
     // Gas data from hook
     ourGas: parseInt(gasUsed.main) || 0,
     theirGas: parseInt(gasUsed.other) || 0,
-    lastRunInstr: rawState?.currentInstruction ? {
-      number: rawState.currentInstruction.stepNumber,
-      total: rawState.totalSteps,
-      pc: rawState.currentInstruction.pc,
-      opcode: currentOpcode || "UNKNOWN",
-      gas: rawState.currentInstruction.gas,
-      gasCost: rawState.currentInstruction.gasCost,
-      memoryMappings: rawState.currentInstruction.memoryMappings || [],
-      memoryChanges: rawState.currentInstruction.memoryChanges || [],
-      // Real data from hook
-      functionSelector: selector || "",
-      callData: callData || "",
-      depth: depth,
+    // LAST_RUN_INSTR: Uses lastInstruction (what just executed)
+    lastRunInstr: lastInstruction ? {
+      number: lastInstruction.stepNumber,
+      total: lastInstruction.totalSteps,
+      pc: lastInstruction.pc,
+      opcode: lastInstruction.opcode,
+      gas: lastInstruction.gas,
+      gasCost: lastInstruction.gasCost,
+      memoryMappings: lastInstruction.memoryMappings || [],
+      memoryChanges: lastInstruction.memoryChanges || [],
+      address: lastInstruction.address,
+      functionSelector: lastInstruction.functionSelector || "",
+      callData: lastInstruction.callData || "",
+      depth: lastInstruction.depth,
+      lastConditionalJump: lastInstruction.lastConditionalJump,
     } : null,
-    // Wire nextInstruction from the hook
+    // NEXT_INSTR_TO_RUN: Uses nextInstruction (what's about to execute)
     nextInstrToRun: nextInstruction ? {
-      number: (nextInstruction.stepNumber ?? 0),
-      total: rawState?.totalSteps ?? 0,
+      number: nextInstruction.stepNumber ?? 0,
+      total: nextInstruction.totalSteps ?? 0,
       pc: nextInstruction.pc,
       opcode: nextInstruction.opcode,
       gas: nextInstruction.gas,
       gasCost: nextInstruction.gasCost,
       memoryMappings: nextInstruction.memoryMappings || [],
       memoryChanges: nextInstruction.memoryChanges || [],
-      // Pass the SAME context info to Next Instruction as we do for Last Run
-      functionSelector: selector || "",
-      callData: callData || "",
-      description: nextInstruction.description, // Pass description explicitly
+      address: nextInstruction.address,
+      functionSelector: nextInstruction.functionSelector || "",
+      callData: nextInstruction.callData || "",
+      description: nextInstruction.description,
+      depth: nextInstruction.depth,
+      lastConditionalJump: nextInstruction.lastConditionalJump,
     } : null
   };
 
@@ -575,6 +584,8 @@ export default function App() {
               <ContractViewer
                 code={contractCode}
                 currentPc={rawState?.currentInstruction?.pc}
+                isExternalContract={isExternalContract}
+                externalAddress={address}
               />
             </Card>
 

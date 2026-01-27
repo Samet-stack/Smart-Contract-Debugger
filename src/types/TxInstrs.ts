@@ -20,6 +20,7 @@ export interface InstructionInfo {
     pc: number;
     opcode: string;
     description?: string;
+    address?: string;
     functionSelector?: string;
     callData?: string;
     memoryMappings?: MemoryMapping[];

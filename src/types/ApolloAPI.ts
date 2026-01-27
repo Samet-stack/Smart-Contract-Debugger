@@ -40,6 +40,7 @@ export interface InstructionInfo {
     description?: string;
     callData?: string;
     functionSelector?: string;
+    depth?: number;
     memoryMappings?: MemoryMapping[];
     memoryChanges?: MemoryChange[];
     lastConditionalJump?: ConditionalJump;
