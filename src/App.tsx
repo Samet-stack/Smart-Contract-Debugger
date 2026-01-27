@@ -24,7 +24,8 @@ import { useApollo } from "./hooks/useApollo";   // Import Hook
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import Shortcuts Hook
 import { useRef, useCallback } from "react";
 
-// import { MOCK_CONTRACT_OPCODES, MOCK_STORAGE, MOCK_TRANSIENT_STORAGE } from "./mock/contract-data"; // Removed mock data
+import StorageView from "./features/storage/StorageView"; // Import StorageView
+import TransientStorageView from "./features/storage/TransientStorageView"; // Import TransientStorageView
 
 export default function App() {
   const [stepSize, setStepSize] = useState(1);
@@ -56,8 +57,37 @@ export default function App() {
     // Sliding Window Stack
     visibleStack,
     stackHistoryLength,
-    stackHistory
+    stackHistory,
+    loadTransaction,
+
+    // NEW: Storage & Transient Storage
+    storage,
+    transientStorage,
+    storageUpdate,
+    transientStorageUpdate,
+
+    // NEW: Contract Code & Transaction Details
+    contractCode,
+    transactionDetails,
+
+    // NEW: Call/Return Data
+    callData,
+    returnData,
+    selector,
+
+    // NEW: Context Info
+    depth,
+    address,
+    gasUsed
   } = useApollo();
+
+  const [txHash, setTxHash] = useState("0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"); // Default hash for demo
+
+  const handleLoad = () => {
+    if (txHash) {
+      loadTransaction(txHash);
+    }
+  };
 
   // --- AUTO-PLAY ENGINE (Manual Interval for UI Control) ---
   const autoPlayInterval = useRef<number | null>(null);
@@ -128,9 +158,9 @@ export default function App() {
 
   // TxInstrs Adapter (Dynamic from Hook)
   const txInstrsData: TxInstrs = {
-    // Fake Gas data for now (or derive if available in rawState later)
-    ourGas: rawState?.currentInstruction?.gas || 0,
-    theirGas: 0,
+    // Gas data from hook
+    ourGas: parseInt(gasUsed.main) || 0,
+    theirGas: parseInt(gasUsed.other) || 0,
     lastRunInstr: rawState?.currentInstruction ? {
       number: rawState.currentInstruction.stepNumber,
       total: rawState.totalSteps,
@@ -140,9 +170,10 @@ export default function App() {
       gasCost: rawState.currentInstruction.gasCost,
       memoryMappings: rawState.currentInstruction.memoryMappings || [],
       memoryChanges: rawState.currentInstruction.memoryChanges || [],
-      // For now, placeholders for detailed fields not yet in DebuggerState
-      functionSelector: "",
-      callData: "",
+      // Real data from hook
+      functionSelector: selector || "",
+      callData: callData || "",
+      depth: depth,
     } : null,
     // Wire nextInstruction from the hook
     nextInstrToRun: nextInstruction ? {
@@ -279,6 +310,9 @@ export default function App() {
             <Input
               placeholder="Tx hash..."
               className="w-full h-9 md:h-10 text-xs md:text-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-brand-500/20 transition-all rounded-xl"
+              value={txHash}
+              onChange={(e) => setTxHash(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleLoad()}
             />
           </div>
 
@@ -318,9 +352,15 @@ export default function App() {
               <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               <span className="hidden lg:inline">Load</span>
             </Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3"
+              onClick={handleLoad}
+              disabled={status === "Loading"}
+            >
               <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-              <span className="hidden lg:inline">Load URL</span>
+              <span className="hidden lg:inline">{status === "Loading" ? "Loading..." : "Load URL"}</span>
             </Button>
             <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
               <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -529,12 +569,39 @@ export default function App() {
           <div className="col-span-12 md:col-span-8 lg:col-span-5 space-y-4">
             {/* Opcodes - EN HAUT */}
             <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
-              <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-sm leading-normal">
-                <div className="text-gray-600">/* Opcodes will appear here. */</div>
-                <div className="text-gray-600 italic text-center py-4">
-                  {/* Real opcodes will need to be fetched/displayed here */}
-                  No contract code loaded
-                </div>
+              <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed">
+                {contractCode.length > 0 ? (
+                  <div className="space-y-0.5">
+                    {contractCode.map((op, index) => {
+                      const isCurrentPc = rawState?.currentInstruction?.pc === op.pc;
+                      return (
+                        <div
+                          key={index}
+                          className={cn(
+                            "flex items-center gap-3 px-2 py-0.5 rounded",
+                            isCurrentPc
+                              ? "bg-brand-500/20 text-brand-600 dark:text-brand-400 font-semibold"
+                              : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                          )}
+                        >
+                          <span className="text-gray-400 w-12 text-right">{op.pc}</span>
+                          <span className={isCurrentPc ? "text-brand-600 dark:text-brand-400" : "text-blue-600 dark:text-blue-400"}>
+                            {op.op}
+                          </span>
+                          {op.arg && (
+                            <span className="text-gray-500 dark:text-gray-400 text-[10px] truncate max-w-[200px]" title={op.arg}>
+                              {op.arg}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 italic text-center py-8">
+                    No contract code loaded - Load a transaction to see opcodes
+                  </div>
+                )}
               </div>
             </Card>
 
@@ -606,16 +673,12 @@ export default function App() {
 
             {/* Transient Storage */}
             <Card title="Transient Storage">
-              <div className="h-24 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3 font-mono text-xs text-cyan-600 dark:text-cyan-400">
-                <div className="text-gray-400 italic text-center p-2">Empty</div>
-              </div>
+              <TransientStorageView items={transientStorage} className="max-h-32" />
             </Card>
 
             {/* Storage */}
             <Card title="Storage">
-              <div className="h-28 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3 font-mono text-xs text-purple-600 dark:text-purple-400">
-                <div className="text-gray-400 italic text-center p-2">Empty</div>
-              </div>
+              <StorageView items={storage} className="max-h-36" />
             </Card>
           </div>
         </div>

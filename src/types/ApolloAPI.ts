@@ -47,14 +47,18 @@ export interface Breakpoint {
     value: string;
     enabled: boolean;
 }
+import type { StorageItem, TransientStorageItem } from "./Storage";
+
 export interface DebuggerState {
     currentStep: number;
     totalSteps: number;
     pcCoverage: number;
     currentInstruction: InstructionInfo | null;
-    nextInstruction: InstructionInfo | null; // Restored next instruction
+    nextInstruction: InstructionInfo | null;
     stack: StackItem[];
     memory: MemorySegment[];
+    storage: StorageItem[];
+    transientStorage: TransientStorageItem[];
     isLoading: boolean;
     error: string | null;
     traceId: string | null;

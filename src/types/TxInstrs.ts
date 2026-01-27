@@ -27,6 +27,17 @@ export interface InstructionInfo {
     depth?: number;
     memoryChanges?: MemoryChange[];
     lastConditionalJump?: ConditionalJump;
+    // Storage updates
+    storageUpdate?: {
+        key: string;
+        value: string;
+        isNew: boolean;
+    };
+    transientStorageUpdate?: {
+        key: string;
+        value: string;
+        isNew: boolean;
+    };
 }
 export interface TxInstrs {
     ourGas: number;

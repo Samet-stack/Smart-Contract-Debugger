@@ -28,7 +28,17 @@
         onBeforeMount: () => { },
         onBeforeUnmount: () => { },
         h: () => null,
-        createApp: () => ({ mount: () => { }, use: () => ({}), component: () => ({}) }),
+        createApp: () => {
+          const app = {
+            mount: () => { },
+            use: () => app,      // Return app for chaining
+            component: () => app, // Return app for chaining
+            mixin: () => app,     // Return app for chaining
+            provide: () => app,    // Return app for chaining
+            directive: () => app   // Return app for chaining
+          };
+          return app;
+        },
         nextTick: (fn) => Promise.resolve().then(fn),
         toRaw: (o) => o,
         markRaw: (o) => o,
@@ -37,6 +47,10 @@
         inject: () => undefined,
         provide: () => { },
         getCurrentInstance: () => null,
+        // Global methods (chained on Vue itself)
+        component: function () { return this; },
+        use: function () { return this; },
+        mixin: function () { return this; }
       };
 
       const ElementPlusStub = {
