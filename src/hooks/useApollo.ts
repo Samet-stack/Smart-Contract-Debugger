@@ -44,10 +44,12 @@ const CONFIG = {
 
 // Helper: Map Engine Stack to UI StackItem
 const mapStack = (engineStack: EngineStack, logMap?: Map<number, log_infos>): StackItem[] => {
+    if (!engineStack || !Array.isArray(engineStack)) return [];
+
     return engineStack.map((item, index) => {
         let modifiedAt = { pc: 0, opcode: 'GENESIS' };
         if (logMap && item.log_id !== undefined) {
-            const log = logMap.get(item.log_id);
+            const log = logMap instanceof Map ? logMap.get(item.log_id) : undefined;
             if (log) {
                 modifiedAt = {
                     pc: log.next_instr.pc,
@@ -71,13 +73,19 @@ const mapStorage = (engineStorage: EngineStorage | undefined, logMap: Map<number
 
     const items: StorageItem[] = [];
 
-    engineStorage.forEach((data, key) => {
+    // Handle both Map and plain object
+    const entries: [string, { value: string; log_id?: number }][] =
+        engineStorage instanceof Map
+            ? Array.from(engineStorage.entries())
+            : Object.entries(engineStorage);
+
+    for (const [key, data] of entries) {
         const isModified = storageUpdate?.key === key;
 
         // Look up log_id to find who modified this slot
         let modifiedAt = undefined;
         if (logMap && data.log_id !== undefined) {
-            const log = logMap.get(data.log_id);
+            const log = logMap instanceof Map ? logMap.get(data.log_id) : undefined;
             if (log) {
                 modifiedAt = {
                     pc: log.next_instr.pc,
@@ -94,7 +102,7 @@ const mapStorage = (engineStorage: EngineStorage | undefined, logMap: Map<number
             isModifiedInCurrentStep: isModified,
             modifiedAt
         });
-    });
+    }
 
     return items;
 };
@@ -109,12 +117,18 @@ const mapTransientStorage = (
 
     const items: TransientStorageItem[] = [];
 
-    engineTransient.forEach((data, key) => {
+    // Handle both Map and plain object
+    const entries: [string, { value: string; log_id: number }][] =
+        engineTransient instanceof Map
+            ? Array.from(engineTransient.entries())
+            : Object.entries(engineTransient);
+
+    for (const [key, data] of entries) {
         const isModified = transientUpdate?.key === key;
 
         let modifiedAt = undefined;
         if (logMap && data.log_id !== undefined) {
-            const log = logMap.get(data.log_id);
+            const log = logMap instanceof Map ? logMap.get(data.log_id) : undefined;
             if (log) {
                 modifiedAt = {
                     pc: log.next_instr.pc,
@@ -130,7 +144,7 @@ const mapTransientStorage = (
             isModifiedInCurrentStep: isModified,
             modifiedAt
         });
-    });
+    }
 
     return items;
 };
@@ -302,17 +316,30 @@ export const useApollo = () => {
     const currentLogRef = useRef<log_infos | null>(null);
 
     // Update all state from current log
-    const updateFromLog = useCallback((log: log_infos | undefined, totalSteps: number, stepIndex: number, txHash: string) => {
+    const updateFromLog = useCallback((log: log_infos | undefined, totalSteps: number, stepIndex: number, txHash: string, logMap?: Map<number, log_infos>) => {
         if (!log) return;
 
         currentLogRef.current = log;
 
+        // Debug logging - remove in production
+        if (stepIndex % 20 === 0) {
+            console.log(`[Apollo Debug] Step ${stepIndex}:`, {
+                opcode: log.next_instr.op,
+                hasMemory: !!log.exec_state.memory?.value,
+                memorySize: log.exec_state.memory?.value ? new Uint8Array(log.exec_state.memory.value).length : 0,
+                hasStorage: !!log.exec_state.storage,
+                storageType: log.exec_state.storage ? (log.exec_state.storage instanceof Map ? 'Map' : typeof log.exec_state.storage) : 'none',
+                storageSize: log.exec_state.storage instanceof Map ? log.exec_state.storage.size : (log.exec_state.storage ? Object.keys(log.exec_state.storage).length : 0),
+                hasTransient: !!log.exec_state.transient_storage,
+            });
+        }
+
         // Update main debugger state
-        setState(mapLogToState(log, totalSteps, stepIndex, txHash, txInfo?.log_map));
+        setState(mapLogToState(log, totalSteps, stepIndex, txHash, logMap));
 
         // Update Storage (for standalone hook variable)
         const storageUpd = log.next_instr.storage_update;
-        setStorage(mapStorage(log.exec_state.storage, txInfo?.log_map, storageUpd));
+        setStorage(mapStorage(log.exec_state.storage, logMap, storageUpd));
         setStorageUpdate(storageUpd ? {
             key: storageUpd.key,
             value: storageUpd.value,
@@ -321,7 +348,7 @@ export const useApollo = () => {
 
         // Update Transient Storage
         const transientUpd = log.next_instr.transient_storage_update;
-        setTransientStorage(mapTransientStorage(log.exec_state.transient_storage, txInfo?.log_map, transientUpd));
+        setTransientStorage(mapTransientStorage(log.exec_state.transient_storage, logMap, transientUpd));
         setTransientStorageUpdate(transientUpd ? {
             key: transientUpd.key,
             value: transientUpd.value,
@@ -396,7 +423,7 @@ export const useApollo = () => {
 
             // Set initial state from first log
             const initialLog = info.trace_iterator.current_log();
-            updateFromLog(initialLog, info.trace.length, 0, hash);
+            updateFromLog(initialLog, info.trace.length, 0, hash, info.log_map);
             setCurrentStepIndex(0);
 
             setStatus("Ready");
@@ -414,7 +441,8 @@ export const useApollo = () => {
         }
     }, []);
 
-    // 10. Update stack history when step changes
+    // 10. Update stack history when step changes (limited to 200 items to prevent memory issues)
+    const MAX_STACK_HISTORY = 200;
     useEffect(() => {
         const currentStep = state?.currentStep ?? -1;
         const stackArr = state?.stack || [];
@@ -422,7 +450,14 @@ export const useApollo = () => {
 
         if (currentStep !== lastStepRef.current && latestItem) {
             if (currentStep > lastStepRef.current) {
-                setStackHistory(prev => [...prev, latestItem]);
+                setStackHistory(prev => {
+                    const newHistory = [...prev, latestItem];
+                    // Keep only last MAX_STACK_HISTORY items
+                    if (newHistory.length > MAX_STACK_HISTORY) {
+                        return newHistory.slice(-MAX_STACK_HISTORY);
+                    }
+                    return newHistory;
+                });
             } else if (currentStep < lastStepRef.current) {
                 setStackHistory(prev => prev.slice(0, -1));
             }
@@ -438,7 +473,7 @@ export const useApollo = () => {
             const log = iterator.current_log();
             const newIndex = currentStepIndex + 1;
             setCurrentStepIndex(newIndex);
-            updateFromLog(log, txInfo.trace.length, newIndex, txInfo.transaction.info.hash);
+            updateFromLog(log, txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog]);
 
@@ -449,7 +484,7 @@ export const useApollo = () => {
             const log = iterator.current_log();
             const newIndex = currentStepIndex - 1;
             setCurrentStepIndex(newIndex);
-            updateFromLog(log, txInfo.trace.length, newIndex, txInfo.transaction.info.hash);
+            updateFromLog(log, txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog]);
 
