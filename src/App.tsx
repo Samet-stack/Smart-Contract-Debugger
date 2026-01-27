@@ -19,6 +19,7 @@ import SettingsModals from "./features/settings/SettingsModals";
 
 import ConsoleModal from "./features/console/ConsoleModal"; // Import ConsoleModal
 import MemoryMappingsView from "./features/memory/MemoryMappingsView"; // Import MemoryMappingsView
+import ContractViewer from "./features/contract/ContractViewer"; // Import ContractViewer
 
 import { useApollo } from "./hooks/useApollo";   // Import Hook
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import Shortcuts Hook
@@ -185,8 +186,10 @@ export default function App() {
       gasCost: nextInstruction.gasCost,
       memoryMappings: nextInstruction.memoryMappings || [],
       memoryChanges: nextInstruction.memoryChanges || [],
-      functionSelector: "",
-      callData: "",
+      // Pass the SAME context info to Next Instruction as we do for Last Run
+      functionSelector: selector || "",
+      callData: callData || "",
+      description: nextInstruction.description, // Pass description explicitly
     } : null
   };
 
@@ -569,40 +572,10 @@ export default function App() {
           <div className="col-span-12 md:col-span-8 lg:col-span-5 space-y-4">
             {/* Opcodes - EN HAUT */}
             <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
-              <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed">
-                {contractCode.length > 0 ? (
-                  <div className="space-y-0.5">
-                    {contractCode.map((op, index) => {
-                      const isCurrentPc = rawState?.currentInstruction?.pc === op.pc;
-                      return (
-                        <div
-                          key={index}
-                          className={cn(
-                            "flex items-center gap-3 px-2 py-0.5 rounded",
-                            isCurrentPc
-                              ? "bg-brand-500/20 text-brand-600 dark:text-brand-400 font-semibold"
-                              : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                          )}
-                        >
-                          <span className="text-gray-400 w-12 text-right">{op.pc}</span>
-                          <span className={isCurrentPc ? "text-brand-600 dark:text-brand-400" : "text-blue-600 dark:text-blue-400"}>
-                            {op.op}
-                          </span>
-                          {op.arg && (
-                            <span className="text-gray-500 dark:text-gray-400 text-[10px] truncate max-w-[200px]" title={op.arg}>
-                              {op.arg}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 italic text-center py-8">
-                    No contract code loaded - Load a transaction to see opcodes
-                  </div>
-                )}
-              </div>
+              <ContractViewer
+                code={contractCode}
+                currentPc={rawState?.currentInstruction?.pc}
+              />
             </Card>
 
             <Card title="Instructions">

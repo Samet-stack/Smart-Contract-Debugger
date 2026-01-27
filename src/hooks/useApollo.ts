@@ -191,13 +191,16 @@ const mapLogToState = (
         };
     }
 
+    // Dynamic total steps to allow exceeding initial estimate
+    const effectiveTotalSteps = Math.max(totalSteps, currentStep + 1);
+
     const currentInstr: InstructionInfo = {
         pc: log.next_instr.pc,
         opcode: log.next_instr.op,
         gas: Number(log.remaining_gas),
         gasCost: Number(log.next_instr.gas_cost),
-        stepNumber: currentStep,
-        totalSteps: totalSteps,
+        stepNumber: currentStep + 1, // 1-based index for display
+        totalSteps: effectiveTotalSteps,
         description: `Executed ${log.next_instr.op}`,
         memoryMappings: [],
         memoryChanges: log.next_instr.memory_update?.map(mu => ({
@@ -227,9 +230,18 @@ const mapLogToState = (
             // Look up log_id for this segment
             let modifiedAt = undefined;
             if (memoryLogIds && logMap) {
-                const logId = memoryLogIds.get(i.toString()); // Try offset as key
+                let logId: number | undefined;
+
+                // Handle Map vs Object for memoryLogIds
+                if (memoryLogIds instanceof Map) {
+                    logId = memoryLogIds.get(i.toString());
+                } else {
+                    // @ts-ignore - Handle raw object access
+                    logId = memoryLogIds[i.toString()];
+                }
+
                 if (logId !== undefined) {
-                    const srcLog = logMap.get(logId);
+                    const srcLog = logMap instanceof Map ? logMap.get(logId) : undefined;
                     if (srcLog) {
                         modifiedAt = { pc: srcLog.next_instr.pc, opcode: srcLog.next_instr.op };
                     }
@@ -308,18 +320,38 @@ export const useApollo = () => {
     const [address, setAddress] = useState<string>("");
     const [gasUsed, setGasUsed] = useState<{ main: string; other: string }>({ main: "0", other: "0" });
 
-    // 7. Stack History Tracking
+    // Refs for persistence tracking
+    const lastDepthRef = useRef<number>(-1);
+
+    // 7. Stack History Tracking & Dynamic Total Steps
     const [stackHistory, setStackHistory] = useState<StackItem[]>([]);
+    const [dynamicTotalSteps, setDynamicTotalSteps] = useState<number>(0); // Initialize with 0
     const lastStepRef = useRef<number>(-1);
 
     // 8. Current log reference for extracting all data
     const currentLogRef = useRef<log_infos | null>(null);
 
     // Update all state from current log
-    const updateFromLog = useCallback((log: log_infos | undefined, totalSteps: number, stepIndex: number, txHash: string, logMap?: Map<number, log_infos>) => {
+    // Warning: 'initialTotalSteps' arg here is the initial trace length
+    const updateFromLog = useCallback((log: log_infos | undefined, initialTotalSteps: number, stepIndex: number, txHash: string, logMap?: Map<number, log_infos>) => {
         if (!log) return;
 
         currentLogRef.current = log;
+
+        // Update dynamic total steps if we exceed current known max
+        setDynamicTotalSteps(prev => {
+            const currentMax = Math.max(prev, initialTotalSteps);
+            return Math.max(currentMax, stepIndex + 1);
+        });
+
+        // Pass the LATEST known max (calculated locally for this render cycle) to mapLogToState
+        // Note: state update setDynamicTotalSteps is async, so we compute local value for immediate usage
+        // But mapLogToState needs a value. We can pass Math.max(initialTotalSteps, stepIndex + 1)
+        const effectiveTotal = Math.max(initialTotalSteps, stepIndex + 1);
+
+        // Check for depth change
+        const depthChanged = log.depth !== lastDepthRef.current;
+        lastDepthRef.current = log.depth;
 
         // Debug logging - remove in production
         if (stepIndex % 20 === 0) {
@@ -335,7 +367,7 @@ export const useApollo = () => {
         }
 
         // Update main debugger state
-        setState(mapLogToState(log, totalSteps, stepIndex, txHash, logMap));
+        setState(mapLogToState(log, effectiveTotal, stepIndex, txHash, logMap));
 
         // Update Storage (for standalone hook variable)
         const storageUpd = log.next_instr.storage_update;
@@ -356,15 +388,25 @@ export const useApollo = () => {
         } : null);
 
         // Update Call Data
-        if (log.call_data?.value) {
+        // Logic: If depth changed, we MUST take new data (or clear if empty).
+        // If depth same, we keep old data unless new data is provided.
+        if (depthChanged) {
+            setCallData(log.call_data?.value ? bufferToHex(log.call_data.value) : "");
+        } else if (log.call_data?.value) {
             setCallData(bufferToHex(log.call_data.value));
         }
 
-        // Update Return Data
-        setReturnData(log.next_instr.return_data || "");
+        // Update Return Data - Accumulate or keep last know return data?
+        // Logic: If current step has return data, show it. Otherwise keep previous?
+        // Let's try: only update if non-empty, otherwise keep.
+        if (log.next_instr.return_data) {
+            setReturnData(log.next_instr.return_data);
+        }
 
         // Update Selector
-        if (log.selector) {
+        if (depthChanged) {
+            setSelector(log.selector ? bufferToHex(log.selector) : "");
+        } else if (log.selector) {
             setSelector(bufferToHex(log.selector));
         }
 
@@ -375,6 +417,17 @@ export const useApollo = () => {
             main: log.gas_used.main_contract.toString(),
             other: log.gas_used.other_contracts.toString()
         });
+
+        // Try to determine Next Instruction (Naive approach using PC + Code)
+        // Since we don't have peek(), we look at the contract code.
+        // Find current instruction in code by PC
+        const currentPc = log.next_instr.pc;
+        // Access code from state or valid source needed here. 
+        // We can't access 'contractCode' state easily inside callback without deps.
+        // We'll pass contractCode to this function or use a ref.
+        // For now, let's leave nextInstruction null in state, but we can compute it in the view or here if we had code.
+
+
 
     }, []);
 
@@ -390,6 +443,7 @@ export const useApollo = () => {
         setContractCode([]);
         setTransactionDetails(null);
         lastStepRef.current = -1;
+        setDynamicTotalSteps(0); // Reset dynamic total steps on new load
 
         try {
             if (typeof Apollo === 'undefined') {
@@ -405,6 +459,23 @@ export const useApollo = () => {
             const info = await Apollo.load_transaction(config);
             console.log("Transaction loaded:", info);
 
+            // Debug Log Map structure safely
+            if (info.log_map) {
+                const keys = info.log_map instanceof Map
+                    ? Array.from(info.log_map.keys())
+                    : Object.keys(info.log_map);
+
+                console.log("Log Map Keys Preview:", keys.slice(0, 20));
+                console.log("Log Map Size:", keys.length);
+
+                // Inspect one entry to see what it contains
+                if (keys.length > 0) {
+                    // @ts-ignore
+                    const firstLog = info.log_map instanceof Map ? info.log_map.get(keys[0]) : info.log_map[keys[0]];
+                    console.log("First Log Entry:", firstLog);
+                }
+            }
+
             setTxInfo(info);
             setIterator(info.trace_iterator);
 
@@ -414,6 +485,7 @@ export const useApollo = () => {
             // Set transaction details
             setTransactionDetails({
                 hash: info.transaction.info.hash,
+                // ... (details kept) ...
                 to: info.transaction.info.dst,
                 gas: info.transaction.info.gas.toString(),
                 gasUsed: info.transaction.receipt.gas_used.toString(),
@@ -421,9 +493,40 @@ export const useApollo = () => {
                 transactionIndex: info.transaction.receipt.transaction_index
             });
 
+            // PRE-CALCULATE TOTAL STEPS (Dry Run)
+            console.log("Starting Dry Run to count total steps...");
+            let calculatedTotal = 0;
+
+            // For debugging, log the condition check
+            console.log(`Trace length hint: ${info.trace.length}`);
+
+            if (info.trace.length < 5000) {
+                const tempIter = info.trace_iterator;
+                // Count forward
+                while (tempIter.next()) {
+                    calculatedTotal++;
+                }
+                console.log(`Dry Run counted: ${calculatedTotal} steps.`);
+
+                // Rewind exactly by the amount we advanced
+                console.log("Rewinding...");
+                for (let i = 0; i < calculatedTotal; i++) {
+                    tempIter.prev();
+                }
+                console.log("Rewind complete.");
+            } else {
+                console.warn("Skipping Dry Run (trace too large)");
+                calculatedTotal = info.trace.length;
+            }
+
             // Set initial state from first log
             const initialLog = info.trace_iterator.current_log();
-            updateFromLog(initialLog, info.trace.length, 0, hash, info.log_map);
+
+            console.log(`Initializing with TotalSteps: ${calculatedTotal}`);
+
+            // Use calculatedTotal as the Single Source of Truth
+            updateFromLog(initialLog, calculatedTotal, 0, hash, info.log_map);
+            setDynamicTotalSteps(calculatedTotal);
             setCurrentStepIndex(0);
 
             setStatus("Ready");
@@ -448,34 +551,65 @@ export const useApollo = () => {
         const stackArr = state?.stack || [];
         const latestItem = stackArr[stackArr.length - 1];
 
-        if (currentStep !== lastStepRef.current && latestItem) {
-            if (currentStep > lastStepRef.current) {
+        // Ensure we have a valid state step
+        if (currentStep === -1 || lastStepRef.current === -1) {
+            if (currentStep !== -1) {
+                // Initialization or first load
+                if (latestItem) setStackHistory([latestItem]);
+                else setStackHistory([]);
+                lastStepRef.current = currentStep;
+            }
+            return;
+        }
+
+        const diff = currentStep - lastStepRef.current;
+
+        if (diff === 0) return; // No change
+
+        if (Math.abs(diff) > 1) {
+            // JUMP DETECTED (Forward or Backward > 1 step)
+            // We cannot maintain continuous history. Reset or set to current.
+            // Best UX: Show current item as the start of a new history segment.
+            if (latestItem) {
+                setStackHistory([latestItem]);
+            } else {
+                setStackHistory([]);
+            }
+        } else if (diff === 1) {
+            // Sequential Next
+            if (latestItem) {
                 setStackHistory(prev => {
                     const newHistory = [...prev, latestItem];
-                    // Keep only last MAX_STACK_HISTORY items
                     if (newHistory.length > MAX_STACK_HISTORY) {
                         return newHistory.slice(-MAX_STACK_HISTORY);
                     }
                     return newHistory;
                 });
-            } else if (currentStep < lastStepRef.current) {
-                setStackHistory(prev => prev.slice(0, -1));
             }
-            lastStepRef.current = currentStep;
+        } else if (diff === -1) {
+            // Sequential Prev
+            setStackHistory(prev => prev.slice(0, -1));
         }
+
+        lastStepRef.current = currentStep;
     }, [state?.currentStep, state?.stack]);
 
     // 11. Navigation Actions
     const next = useCallback(() => {
         if (!iterator || !txInfo) return;
         const hasNext = iterator.next();
+        console.log(`[Navigation] Next: ${hasNext}, CurrentStep: ${currentStepIndex}`);
         if (hasNext) {
             const log = iterator.current_log();
             const newIndex = currentStepIndex + 1;
             setCurrentStepIndex(newIndex);
-            updateFromLog(log, txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
+            // Use dynamicTotalSteps to preserve the pre-calculated count
+            // Fallback to trace.length if dynamic is 0 (should not happen if loaded)
+            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
+        } else {
+            console.warn("Iterator returned false for next()");
         }
-    }, [iterator, txInfo, currentStepIndex, updateFromLog]);
+    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
 
     const prev = useCallback(() => {
         if (!iterator || !txInfo) return;
@@ -484,9 +618,9 @@ export const useApollo = () => {
             const log = iterator.current_log();
             const newIndex = currentStepIndex - 1;
             setCurrentStepIndex(newIndex);
-            updateFromLog(log, txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
+            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map);
         }
-    }, [iterator, txInfo, currentStepIndex, updateFromLog]);
+    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
 
     const setBreakpoint = useCallback((bp: Breakpoint) => {
         console.warn("Breakpoints not yet implemented for Real Engine");
@@ -525,6 +659,81 @@ export const useApollo = () => {
     const getCurrentLog = useCallback(() => {
         return currentLogRef.current;
     }, []);
+
+    // 14.5. Dynamic Contract Code Switching
+    useEffect(() => {
+        if (!state?.currentInstruction || !txInfo) return;
+
+        // If we are executing in a different address than the main contract,
+        // and we don't have code for it (currently we only load main contract code),
+        // we should clear the code view to avoid misleading highlighting.
+        if (address && txInfo.transaction.info.dst) {
+            const isMainContract = address.toLowerCase() === txInfo.transaction.info.dst.toLowerCase();
+
+            if (isMainContract) {
+                // Restore main contract code if not already set or if it was cleared
+                if (contractCode.length === 0 && txInfo.code) {
+                    setContractCode(mapContractCode(txInfo.code));
+                }
+            } else {
+                // External contract: Clear code if it's currently showing main contract code
+                if (contractCode.length > 0) {
+                    setContractCode([]);
+                }
+            }
+        }
+    }, [address, txInfo]);
+
+    // 15. Derive Next Instruction from Code
+    const derivedNextInstruction = useMemo(() => {
+        if (!state?.currentInstruction) return null;
+
+        // Fallback for when code is not available (External Contract)
+        const fallbackNext: InstructionInfo = {
+            pc: 0,
+            opcode: "UNKNOWN",
+            gas: state.currentInstruction.gas,
+            gasCost: 0,
+            stepNumber: (state.currentStep || 0) + 1,
+            totalSteps: state.totalSteps,
+            description: "Next instruction not available (external source)",
+            // Pass through context data that remains valid
+            depth: state.currentInstruction.depth,
+            callData: callData,
+            functionSelector: selector,
+            memoryMappings: [],
+            memoryChanges: []
+        };
+
+        if (contractCode.length === 0) {
+            return fallbackNext;
+        }
+
+        const currentPc = state.currentInstruction.pc;
+        // Find index of current opcode
+        const currentIndex = contractCode.findIndex(op => op.pc === currentPc);
+
+        // If found and not last, return next
+        if (currentIndex !== -1 && currentIndex < contractCode.length - 1) {
+            const nextOp = contractCode[currentIndex + 1];
+            return {
+                pc: nextOp.pc,
+                opcode: nextOp.op,
+                // Correctly populate step metadata
+                gas: state.currentInstruction.gas,
+                gasCost: 0,
+                stepNumber: (state.currentStep || 0) + 1,
+                totalSteps: state.totalSteps,
+                description: "Next instruction",
+                depth: state.currentInstruction.depth,
+                callData: callData,
+                functionSelector: selector,
+                memoryMappings: [], memoryChanges: []
+            } as InstructionInfo;
+        }
+
+        return fallbackNext;
+    }, [state?.currentInstruction?.pc, state?.currentStep, state?.totalSteps, contractCode]);
 
     return {
         // Load
@@ -570,7 +779,7 @@ export const useApollo = () => {
         gasUsed,
 
         // Next Instruction
-        nextInstruction: state?.nextInstruction || null,
+        nextInstruction: derivedNextInstruction,
 
         // Navigation
         next,

@@ -9,6 +9,7 @@ export interface StackItem {
 export interface MemorySegment {
     offset: number;
     value: string;
+    ascii?: string; // Representation ASCII pour l'affichage
     modifiedAt?: { pc: number; opcode: string };
     isModifiedInCurrentStep: boolean;
 }
@@ -37,6 +38,8 @@ export interface InstructionInfo {
     stepNumber: number;
     totalSteps: number;
     description?: string;
+    callData?: string;
+    functionSelector?: string;
     memoryMappings?: MemoryMapping[];
     memoryChanges?: MemoryChange[];
     lastConditionalJump?: ConditionalJump;
