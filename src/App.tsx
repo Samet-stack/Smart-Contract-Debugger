@@ -81,7 +81,10 @@ export default function App() {
     depth,
     address,
     gasUsed,
-    isExternalContract
+    isExternalContract,
+
+    // Full Memory Mappings (like old Apollo)
+    fullMemoryMappings
   } = useApollo();
 
   const [txHash, setTxHash] = useState("0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"); // Default hash for demo
@@ -647,10 +650,10 @@ export default function App() {
                 {/* Separator */}
                 <div className="border-t border-gray-100 dark:border-gray-800" />
 
-                {/* Mappings Section */}
+                {/* Mappings Section - Full Memory Mappings (like old Apollo) */}
                 <div>
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Active Mappings</h4>
-                  <MemoryMappingsView mappings={txInstrsData.lastRunInstr?.memoryMappings || []} />
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Mappings</h4>
+                  <MemoryMappingsView mappings={fullMemoryMappings} />
                 </div>
               </div>
             </Card>

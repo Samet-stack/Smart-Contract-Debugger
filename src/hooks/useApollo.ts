@@ -37,19 +37,23 @@ export interface TransactionDetails {
     transactionIndex: number;
 }
 
-const CONFIG = {
-    node_url: "https://app.functori.com/reth",
-    tx_hash: "0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"
+// Helper to extract actual Map from logMap structure
+const getActualLogMap = (logMap: any): Map<number, log_infos> | undefined => {
+    if (logMap?.instr_map instanceof Map) return logMap.instr_map;
+    if (logMap instanceof Map) return logMap;
+    return undefined;
 };
 
 // Helper: Map Engine Stack to UI StackItem
-const mapStack = (engineStack: EngineStack, logMap?: Map<number, log_infos>): StackItem[] => {
+const mapStack = (engineStack: EngineStack, logMap?: any): StackItem[] => {
     if (!engineStack || !Array.isArray(engineStack)) return [];
+
+    const actualLogMap = getActualLogMap(logMap);
 
     return engineStack.map((item, index) => {
         let modifiedAt = { pc: 0, opcode: 'GENESIS' };
-        if (logMap && item.log_id !== undefined) {
-            const log = logMap instanceof Map ? logMap.get(item.log_id) : undefined;
+        if (actualLogMap && item.log_id !== undefined) {
+            const log = actualLogMap.get(item.log_id);
             if (log) {
                 modifiedAt = {
                     pc: log.next_instr.pc,
@@ -68,9 +72,10 @@ const mapStack = (engineStack: EngineStack, logMap?: Map<number, log_infos>): St
 };
 
 // Helper: Map Engine Storage to UI StorageItem[]
-const mapStorage = (engineStorage: EngineStorage | undefined, logMap: Map<number, log_infos> | undefined, storageUpdate?: { key: string; value: string; creating_slot: boolean }): StorageItem[] => {
+const mapStorage = (engineStorage: EngineStorage | undefined, logMap: any, storageUpdate?: { key: string; value: string; creating_slot: boolean }): StorageItem[] => {
     if (!engineStorage) return [];
 
+    const actualLogMap = getActualLogMap(logMap);
     const items: StorageItem[] = [];
 
     // Handle both Map and plain object
@@ -84,8 +89,8 @@ const mapStorage = (engineStorage: EngineStorage | undefined, logMap: Map<number
 
         // Look up log_id to find who modified this slot
         let modifiedAt = undefined;
-        if (logMap && data.log_id !== undefined) {
-            const log = logMap instanceof Map ? logMap.get(data.log_id) : undefined;
+        if (actualLogMap && data.log_id !== undefined) {
+            const log = actualLogMap.get(data.log_id);
             if (log) {
                 modifiedAt = {
                     pc: log.next_instr.pc,
@@ -110,11 +115,12 @@ const mapStorage = (engineStorage: EngineStorage | undefined, logMap: Map<number
 // Helper: Map Engine Transient Storage to UI TransientStorageItem[]
 const mapTransientStorage = (
     engineTransient: EngineTransientStorage | undefined,
-    logMap: Map<number, log_infos> | undefined,
+    logMap: any,
     transientUpdate?: { key: string; value: string; creating_slot: boolean }
 ): TransientStorageItem[] => {
     if (!engineTransient) return [];
 
+    const actualLogMap = getActualLogMap(logMap);
     const items: TransientStorageItem[] = [];
 
     // Handle both Map and plain object
@@ -127,8 +133,8 @@ const mapTransientStorage = (
         const isModified = transientUpdate?.key === key;
 
         let modifiedAt = undefined;
-        if (logMap && data.log_id !== undefined) {
-            const log = logMap instanceof Map ? logMap.get(data.log_id) : undefined;
+        if (actualLogMap && data.log_id !== undefined) {
+            const log = actualLogMap.get(data.log_id);
             if (log) {
                 modifiedAt = {
                     pc: log.next_instr.pc,
@@ -164,6 +170,56 @@ const bufferToHex = (buffer: ArrayBuffer | undefined): string => {
     return "0x" + Array.from(new Uint8Array(buffer))
         .map(b => b.toString(16).padStart(2, "0"))
         .join("");
+};
+
+// Type for full memory mappings (like old Apollo)
+export interface FullMemoryMapping {
+    range: string;      // "[0;4]"
+    pc: number;
+    opcode: string;
+}
+
+// Helper: Build full memory mappings from memory.log_ids
+// The WASM engine already provides ranges as keys like "[0;4]", "[4;36]", etc.
+const buildFullMemoryMappings = (
+    memoryLogIds: Map<string, number> | Record<string, number> | undefined,
+    logMap: any // Can be Map or {counter, instr_map} structure
+): FullMemoryMapping[] => {
+    // Extract the actual Map from logMap structure if needed
+    const actualLogMap: Map<number, log_infos> | undefined =
+        logMap?.instr_map instanceof Map ? logMap.instr_map :
+        logMap instanceof Map ? logMap : undefined;
+
+    if (!memoryLogIds || !actualLogMap) {
+        return [];
+    }
+
+    const mappings: FullMemoryMapping[] = [];
+
+    // Keys are already ranges like "[0;4]", "[4;36]", etc.
+    const entries = memoryLogIds instanceof Map
+        ? Array.from(memoryLogIds.entries())
+        : Object.entries(memoryLogIds);
+
+    for (const [rangeKey, logId] of entries) {
+        const srcLog = actualLogMap.get(logId as number);
+        if (srcLog) {
+            mappings.push({
+                range: rangeKey, // Already formatted as "[start;end]"
+                pc: srcLog.next_instr.pc,
+                opcode: srcLog.next_instr.op
+            });
+        }
+    }
+
+    // Sort by start offset (extract number from "[start;end]")
+    mappings.sort((a, b) => {
+        const aStart = parseInt(a.range.slice(1)); // "[0;4]" -> "0"
+        const bStart = parseInt(b.range.slice(1));
+        return aStart - bStart;
+    });
+
+    return mappings;
 };
 
 // Helper: Map Engine Log to DebuggerState
@@ -242,22 +298,31 @@ const mapLogToState = (
                 .join("");
 
             // Look up log_id for this segment
+            // Keys in memoryLogIds are ranges like "[0;4]", "[4;36]", etc.
+            // We need to find which range contains our offset 'i'
             let modifiedAt = undefined;
             if (memoryLogIds && logMap) {
-                let logId: number | undefined;
+                const actualLogMap = getActualLogMap(logMap);
 
-                // Handle Map vs Object for memoryLogIds
-                if (memoryLogIds instanceof Map) {
-                    logId = memoryLogIds.get(i.toString());
-                } else {
-                    // @ts-ignore - Handle raw object access
-                    logId = memoryLogIds[i.toString()];
-                }
+                // Find the range that contains offset 'i'
+                const entries = memoryLogIds instanceof Map
+                    ? Array.from(memoryLogIds.entries())
+                    : Object.entries(memoryLogIds);
 
-                if (logId !== undefined) {
-                    const srcLog = logMap instanceof Map ? logMap.get(logId) : undefined;
-                    if (srcLog) {
-                        modifiedAt = { pc: srcLog.next_instr.pc, opcode: srcLog.next_instr.op };
+                for (const [rangeKey, logId] of entries) {
+                    // Parse range "[start;end]"
+                    const match = rangeKey.match(/\[(\d+);(\d+)\]/);
+                    if (match) {
+                        const start = parseInt(match[1]);
+                        const end = parseInt(match[2]);
+                        // Check if our 32-byte chunk starting at 'i' overlaps with this range
+                        if (i >= start && i < end) {
+                            const srcLog = actualLogMap?.get(logId as number);
+                            if (srcLog) {
+                                modifiedAt = { pc: srcLog.next_instr.pc, opcode: srcLog.next_instr.op };
+                            }
+                            break; // Found a match
+                        }
                     }
                 }
             }
@@ -333,6 +398,9 @@ export const useApollo = () => {
     const [depth, setDepth] = useState<number>(0);
     const [address, setAddress] = useState<string>("");
     const [gasUsed, setGasUsed] = useState<{ main: string; other: string }>({ main: "0", other: "0" });
+
+    // 6.5. Full Memory Mappings (like old Apollo - shows all regions and who wrote them)
+    const [fullMemoryMappings, setFullMemoryMappings] = useState<FullMemoryMapping[]>([]);
 
     // Refs for persistence tracking
     const lastDepthRef = useRef<number>(-1);
@@ -414,17 +482,6 @@ export const useApollo = () => {
             }
         }
 
-        // DEBUG: Compare prev vs current
-        console.log("[PEEK DEBUG] Semantic Fix:", {
-            prevPC: prevLog?.next_instr.pc,
-            prevOp: prevLog?.next_instr.op,
-            prevGas: prevLog ? Number(prevLog.remaining_gas) : null,
-            currentPC: log.next_instr.pc,
-            currentOp: log.next_instr.op,
-            currentGas: Number(log.remaining_gas),
-            stepIndex
-        });
-
         setPrevLogData(prevLog);
 
         // Update dynamic total steps if we exceed current known max
@@ -441,19 +498,6 @@ export const useApollo = () => {
         // Check for depth change
         const depthChanged = log.depth !== lastDepthRef.current;
         lastDepthRef.current = log.depth;
-
-        // Debug logging - remove in production
-        if (stepIndex % 20 === 0) {
-            console.log(`[Apollo Debug] Step ${stepIndex}:`, {
-                opcode: log.next_instr.op,
-                hasMemory: !!log.exec_state.memory?.value,
-                memorySize: log.exec_state.memory?.value ? new Uint8Array(log.exec_state.memory.value).length : 0,
-                hasStorage: !!log.exec_state.storage,
-                storageType: log.exec_state.storage ? (log.exec_state.storage instanceof Map ? 'Map' : typeof log.exec_state.storage) : 'none',
-                storageSize: log.exec_state.storage instanceof Map ? log.exec_state.storage.size : (log.exec_state.storage ? Object.keys(log.exec_state.storage).length : 0),
-                hasTransient: !!log.exec_state.transient_storage,
-            });
-        }
 
         // Update main debugger state
         setState(mapLogToState(log, effectiveTotal, stepIndex, txHash, logMap));
@@ -508,6 +552,9 @@ export const useApollo = () => {
             other: log.gas_used.other_contracts.toString()
         });
 
+        // Build full memory mappings (like old Apollo - shows ALL memory regions and who wrote them)
+        setFullMemoryMappings(buildFullMemoryMappings(log.exec_state.memory?.log_ids, logMap));
+
         // Next instruction is derived from current log (next_instr).
     }, [mapLogToInstruction]);
 
@@ -536,26 +583,7 @@ export const useApollo = () => {
                 tx_hash: hash
             };
 
-            console.log("Loading transaction...", config);
             const info = await Apollo.load_transaction(config);
-            console.log("Transaction loaded:", info);
-
-            // Debug Log Map structure safely
-            if (info.log_map) {
-                const keys = info.log_map instanceof Map
-                    ? Array.from(info.log_map.keys())
-                    : Object.keys(info.log_map);
-
-                console.log("Log Map Keys Preview:", keys.slice(0, 20));
-                console.log("Log Map Size:", keys.length);
-
-                // Inspect one entry to see what it contains
-                if (keys.length > 0) {
-                    // @ts-ignore
-                    const firstLog = info.log_map instanceof Map ? info.log_map.get(keys[0]) : info.log_map[keys[0]];
-                    console.log("First Log Entry:", firstLog);
-                }
-            }
 
             setTxInfo(info);
             setIterator(info.trace_iterator);
@@ -575,11 +603,7 @@ export const useApollo = () => {
             });
 
             // PRE-CALCULATE TOTAL STEPS (Dry Run)
-            console.log("Starting Dry Run to count total steps...");
             let calculatedTotal = 0;
-
-            // For debugging, log the condition check
-            console.log(`Trace length hint: ${info.trace.length}`);
 
             if (info.trace.length < 5000) {
                 const tempIter = info.trace_iterator;
@@ -587,23 +611,17 @@ export const useApollo = () => {
                 while (tempIter.next()) {
                     calculatedTotal++;
                 }
-                console.log(`Dry Run counted: ${calculatedTotal} steps.`);
 
                 // Rewind exactly by the amount we advanced
-                console.log("Rewinding...");
                 for (let i = 0; i < calculatedTotal; i++) {
                     tempIter.prev();
                 }
-                console.log("Rewind complete.");
             } else {
-                console.warn("Skipping Dry Run (trace too large)");
                 calculatedTotal = info.trace.length;
             }
 
             // Set initial state from first log
             const initialLog = info.trace_iterator.current_log();
-
-            console.log(`Initializing with TotalSteps: ${calculatedTotal}`);
 
             // Use calculatedTotal as the Single Source of Truth
             // Pass iterator for peek functionality
@@ -619,12 +637,6 @@ export const useApollo = () => {
         }
     }, [updateFromLog]);
 
-    // Initial check for global presence
-    useEffect(() => {
-        if (typeof Apollo === 'undefined') {
-            console.warn("Apollo global is missing on mount");
-        }
-    }, []);
 
     // 10. Update stack history when step changes (limited to 200 items to prevent memory issues)
     const MAX_STACK_HISTORY = 200;
@@ -680,7 +692,6 @@ export const useApollo = () => {
     const next = useCallback(() => {
         if (!iterator || !txInfo) return;
         const hasNext = iterator.next();
-        console.log(`[Navigation] Next: ${hasNext}, CurrentStep: ${currentStepIndex}`);
         if (hasNext) {
             const log = iterator.current_log();
             const newIndex = currentStepIndex + 1;
@@ -688,8 +699,6 @@ export const useApollo = () => {
             // Use dynamicTotalSteps to preserve the pre-calculated count
             // Pass iterator for peek functionality
             updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
-        } else {
-            console.warn("Iterator returned false for next()");
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
 
@@ -706,7 +715,7 @@ export const useApollo = () => {
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
 
     const setBreakpoint = useCallback((bp: Breakpoint) => {
-        console.warn("Breakpoints not yet implemented for Real Engine");
+        // TODO: Implement breakpoints
     }, []);
 
     // 12. Computed Data
@@ -817,6 +826,7 @@ export const useApollo = () => {
 
         // Memory
         memory: state?.memory || [],
+        fullMemoryMappings,
 
         // NEW: Storage
         storage,
