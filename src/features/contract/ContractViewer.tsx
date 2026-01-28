@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import { cn } from "../../ui-lib/utils/cn";
 import type { ContractOpcode } from "../../hooks/useApollo";
+import { useAliases } from "../../context/AliasContext";
 
 interface ContractViewerProps {
     code: ContractOpcode[];
@@ -13,6 +14,11 @@ interface ContractViewerProps {
 export default function ContractViewer({ code, currentPc, isExternalContract, externalAddress }: ContractViewerProps) {
     const activeRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const { findAlias } = useAliases();
+    const aliasLabel = externalAddress ? findAlias(externalAddress)?.label : undefined;
+    const shortAddress = externalAddress
+        ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}`
+        : "unknown";
 
     // Auto-scroll to active element whenever currentPc changes
     useEffect(() => {
@@ -41,7 +47,9 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                 <span className="text-3xl mb-2 opacity-20">📝</span>
                 <p className="font-semibold text-sm">External Contract</p>
                 <p className="text-xs font-mono mt-1 opacity-70 break-all">
-                    {externalAddress ? `Executing at ${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}` : "Code not available for this address"}
+                    {externalAddress
+                        ? `Executing at ${aliasLabel ? `${aliasLabel} (${shortAddress})` : shortAddress}`
+                        : "Code not available for this address"}
                 </p>
             </div>
         );
@@ -56,7 +64,7 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                         ⚠️ External Call - Executing at:
                     </span>
                     <span className="font-mono text-orange-600 dark:text-orange-400 ml-1">
-                        {externalAddress ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}` : "unknown"}
+                        {aliasLabel ? `${aliasLabel} (${shortAddress})` : shortAddress}
                     </span>
                 </div>
             )}
