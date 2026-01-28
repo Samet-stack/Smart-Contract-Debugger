@@ -51,6 +51,8 @@ export interface Breakpoint {
     type: "Storage" | "Transient" | "Memory" | "Opcode" | "PC";
     value: string;
     enabled: boolean;
+    min?: string;
+    max?: string;
 }
 import type { StorageItem, TransientStorageItem } from "./Storage";
 

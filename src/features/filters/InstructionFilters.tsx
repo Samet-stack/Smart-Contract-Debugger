@@ -17,9 +17,12 @@ const OPCODES = [
   "CREATE", "CALL", "CALLCODE", "RETURN", "DELEGATECALL", "CREATE2", "STATICCALL", "REVERT", "INVALID", "SELFDESTRUCT"
 ];
 
-export default function InstructionFilters() {
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+export interface InstructionFiltersProps {
+  filters: string[];
+  onChange: (filters: string[]) => void;
+}
 
+export default function InstructionFilters({ filters, onChange }: InstructionFiltersProps) {
   // Function to verify if valid hex value (0x...)
   const isValidHex = (val: string) => /^0x[0-9a-fA-F]+$/.test(val);
 
@@ -33,16 +36,16 @@ export default function InstructionFilters() {
           label="Select instructions types or PC :"
           placeholder="Type opcode or PC..."
           options={OPCODES}
-          selected={selectedFilters}
-          onChange={setSelectedFilters}
+          selected={filters}
+          onChange={onChange}
           allowCustom={true}
           validateCustomValue={isValidHex} // Enforcing Hex format (0x123)
           className="w-full"
         />
       </div>
       {/* Clear button optional, but MultiSelect allows removing tags one by one. Keeping it if need to clear all at once. */}
-      {selectedFilters.length > 0 && (
-        <Button size="sm" variant="outline" className="mt-2 w-full justify-center" onClick={() => setSelectedFilters([])}>Clear</Button>
+      {filters.length > 0 && (
+        <Button size="sm" variant="outline" className="mt-2 w-full justify-center" onClick={() => onChange([])}>Clear</Button>
       )}
     </Card>
   );

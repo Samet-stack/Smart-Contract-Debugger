@@ -13,7 +13,9 @@ import TxInstrsView from "./features/tx/TxInstrsView";
 import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
+import type { Breakpoint } from "./types/ApolloAPI"; // Import Breakpoint
 import InstructionFilters from "./features/filters/InstructionFilters"; // Nouveau composant Feature
+
 import SettingsMenu, { type SettingsTab } from "./features/settings/SettingsMenu";
 import SettingsModals from "./features/settings/SettingsModals";
 
@@ -45,7 +47,6 @@ export default function App() {
     rawState,
     next,
     prev,
-    setBreakpoint,
 
     lastInstruction,
     nextInstruction,
@@ -85,7 +86,20 @@ export default function App() {
     isExternalContract,
 
     // Full Memory Mappings (like old Apollo)
-    fullMemoryMappings
+    fullMemoryMappings,
+
+
+    // NEW: Filters & Breakpoints
+    filters,
+    setFilters,
+    breakpoints,
+    setBreakpoint,
+    removeBreakpoint,
+
+    // Skip Contract
+    skipContract,
+    setSkipContract,
+
   } = useApollo();
 
   const [txHash, setTxHash] = useState("0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"); // Default hash for demo
@@ -209,15 +223,11 @@ export default function App() {
 
   type BreakpointType = "Storage" | "Transient" | "Memory";
 
-  interface Breakpoint {
-    id: string;
-    type: BreakpointType;
-    value: string;
-    min?: string;
-    max?: string;
-  }
 
-  const [breakpoints, setBreakpoints] = useState<Breakpoint[]>([]);
+
+
+
+
   const [storageInput, setStorageInput] = useState("");
   const [transientInput, setTransientInput] = useState("");
   const [memoryMin, setMemoryMin] = useState<number>(0);
@@ -225,7 +235,8 @@ export default function App() {
   const [memoryRangeEnabled, setMemoryRangeEnabled] = useState(false);
   const [metacall, setMetacall] = useState(false);
   const [alias, setAlias] = useState(false);
-  const [skipContract, setSkipContract] = useState(false);
+  // REMOVED local skipContract state
+
 
   const addBreakpoint = (type: BreakpointType, inputValue: string, setInput: (v: string) => void) => {
     if (!inputValue) return;
@@ -236,8 +247,10 @@ export default function App() {
     const newBp: Breakpoint = {
       id: Date.now().toString() + Math.random().toString(),
       type,
-      value: inputValue
+      value: inputValue,
+      enabled: true
     };
+
 
     // Call Hook Action
     setBreakpoint({
@@ -247,9 +260,9 @@ export default function App() {
       enabled: true
     });
 
-    setBreakpoints([...breakpoints, newBp]);
     setInput("");
   };
+
 
   const toggleMemoryRange = () => {
     const newState = !memoryRangeEnabled;
@@ -260,17 +273,20 @@ export default function App() {
         type: "Memory",
         value: `[${memoryMin};${memoryMax}]`,
         min: memoryMin.toString(),
-        max: memoryMax.toString()
+        max: memoryMax.toString(),
+        enabled: true
       };
-      setBreakpoints([...breakpoints, newBp]);
+
+      setBreakpoint(newBp); // Use hook setter
     } else {
-      setBreakpoints(breakpoints.filter(bp => bp.type !== "Memory"));
+      // Remove any Memory type breakpoint
+      breakpoints.filter(bp => bp.type === "Memory").forEach(bp => removeBreakpoint(bp.id));
     }
   };
 
-  const removeBreakpoint = (id: string) => {
-    setBreakpoints(breakpoints.filter(bp => bp.id !== id));
-  };
+
+  // removeBreakpoint is now imported from hook
+
 
   // --- Keyboard Shortcuts ---
   useEffect(() => {
@@ -414,7 +430,8 @@ export default function App() {
             />
 
             {/* Filters */}
-            <InstructionFilters />
+            <InstructionFilters filters={filters} onChange={setFilters} />
+
 
             {/* Breakpoints */}
             <Card title="Breakpoints">

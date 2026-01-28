@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { DebuggerState, Breakpoint, InstructionInfo, MemorySegment } from '../types/ApolloAPI';
+import type { Breakpoint as EngineBreakpoint } from '../types/ApolloAPI'; // Re-export or just use local definition if needed, but Breakpoint is already imported above
+
 import type { StackItem } from '../types/StackItem';
 import type { StorageItem, TransientStorageItem, StorageUpdate, TransientStorageUpdate } from '../types/Storage';
 import type {
@@ -188,7 +190,7 @@ const buildFullMemoryMappings = (
     // Extract the actual Map from logMap structure if needed
     const actualLogMap: Map<number, log_infos> | undefined =
         logMap?.instr_map instanceof Map ? logMap.instr_map :
-        logMap instanceof Map ? logMap : undefined;
+            logMap instanceof Map ? logMap : undefined;
 
     if (!memoryLogIds || !actualLogMap) {
         return [];
@@ -400,7 +402,15 @@ export const useApollo = () => {
     const [gasUsed, setGasUsed] = useState<{ main: string; other: string }>({ main: "0", other: "0" });
 
     // 6.5. Full Memory Mappings (like old Apollo - shows all regions and who wrote them)
+    // 6.5. Full Memory Mappings (like old Apollo - shows all regions and who wrote them)
     const [fullMemoryMappings, setFullMemoryMappings] = useState<FullMemoryMapping[]>([]);
+
+    // 6.6 Filters & Breakpoints
+    const [filters, setFilters] = useState<string[]>([]);
+    const [breakpoints, setBreakpoints] = useState<Breakpoint[]>([]);
+    const [skipContract, setSkipContract] = useState(false);
+
+
 
     // Refs for persistence tracking
     const lastDepthRef = useRef<number>(-1);
@@ -575,8 +585,10 @@ export const useApollo = () => {
 
         try {
             if (typeof Apollo === 'undefined') {
+                // @ts-ignore
                 throw new Error("Apollo global not found. Is apollo-engine.js loaded?");
             }
+
 
             const config = {
                 node_url: "/reth",
@@ -689,35 +701,226 @@ export const useApollo = () => {
     }, [state?.currentStep, state?.stack]);
 
     // 11. Navigation Actions (supports stepping multiple instructions)
+
+
+    // Helper: Check if we should stop based on Breakpoints
+    const shouldStop = useCallback((log: log_infos): boolean => {
+        if (!breakpoints || breakpoints.length === 0) return false;
+
+        // Check each breakpoint
+        for (const bp of breakpoints) {
+            if (!bp.enabled) continue;
+
+            // 1. Storage Breakpoint
+            if (bp.type === "Storage") {
+                const storageUpd = log.next_instr.storage_update;
+                // If this step modifies the specific storage key
+                if (storageUpd && storageUpd.key.toLowerCase() === bp.value.toLowerCase()) {
+                    return true;
+                }
+            }
+
+            // 2. Transient Storage Breakpoint
+            if (bp.type === "Transient") {
+                const transientUpd = log.next_instr.transient_storage_update;
+                if (transientUpd && transientUpd.key.toLowerCase() === bp.value.toLowerCase()) {
+                    return true;
+                }
+            }
+
+            // 3. Memory Breakpoint
+            if (bp.type === "Memory") {
+                const memUpdates = log.next_instr.memory_update;
+                if (memUpdates && memUpdates.length > 0) {
+                    // Check range [min, max]
+                    // Format value usually: "[0;32]" or similar, but let's rely on min/max props if available
+                    // Or parse value if strictly formatted.
+                    // The UI sends: value: `[${memoryMin};${memoryMax}]`, min: ..., max: ...
+                    let start = 0;
+                    let end = 32;
+
+                    if (bp.min && bp.max) {
+                        start = parseInt(bp.min);
+                        end = parseInt(bp.max);
+                    }
+
+                    // Check collision with any memory update
+                    for (const update of memUpdates) {
+                        const upStart = Number(update.offset);
+                        const upEnd = upStart + Number(update.size);
+
+                        // Overlap check: NOT (UpdateEnd <= WatchStart OR UpdateStart >= WatchEnd)
+                        if (!(upEnd <= start || upStart >= end)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }, [breakpoints]);
+
+    // Helper: Check if current instruction matches filters (for "Next" skipping)
+    const matchesFilter = useCallback((log: log_infos): boolean => {
+        if (!filters || filters.length === 0) return true; // No filters = all match
+
+        const op = log.next_instr.op.toUpperCase();
+        const pc = "0x" + log.next_instr.pc.toString(16).toUpperCase(); // Canonical hex PC
+        const pcShort = log.next_instr.pc.toString(); // Decimal PC string if user types that? Assuming hex.
+
+        // Check if filter list includes OP or PC
+        // Filters usually: ["SSTORE", "0x14"]
+        return filters.some(f =>
+            f.toUpperCase() === op ||
+            f.toLowerCase() === pc.toLowerCase()
+        );
+    }, [filters]);
+
+
     const stepForward = useCallback((count = 1) => {
         if (!iterator || !txInfo) return;
         const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
         let moved = 0;
         let log: log_infos | null = null;
+        let hitBreakpoint = false;
 
-        while (moved < steps && iterator.next()) {
+        // MODE 1: Normal Step (or Filter Skipping)
+        // If we have filters, "Step 1" means "Find NEXT match"
+        const isFiltering = filters.length > 0;
+        const maxSearchSteps = isFiltering ? 5000 : steps; // Safety limit for filters
+
+        // We loop until we moved 'steps' VALID times (usually 1)
+        // In filter mode, 1 valid step means finding 1 matching instruction
+        let validStepsFound = 0;
+
+        // Safety break for huge traces
+        let totalScanned = 0;
+        // Increase limit to 10M for large traces
+        const SCAN_LIMIT = 10_000_000;
+
+        // SKIP CONTRACT STATE
+        // If we are "skipping contract", we need to track the depth where we started skipping.
+        // We only stop skipping when we return to this depth (or valid lower depth).
+        // Actually, simplest logic: If skipContract is ON, we simply treat "depth > currentDepth" as "skip".
+        // But we need to know what "currentDepth" was BEFORE we started stepping?
+        // No, "Skip Contract" usually means "Don't show instructions deeper than CURRENT depth".
+        // So if we are at depth 0, and next instr is depth 1, we skip until depth 0 again.
+        const startingDepth = currentLogRef.current?.depth ?? 0;
+
+        while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
+            if (!iterator.next()) break; // End of trace
+
             log = iterator.current_log();
-            moved++;
+            if (!log) break;
+
+            totalScanned++;
+
+            // 0. SKIP CONTRACT CHECK
+            // If skipContract is ON, and we went DEEPER than starting depth, this step is "invalid" (skipped)
+            // UNLESS it matches a filter? Usually "Skip Contract" overrides filters inside that contract.
+            if (skipContract && log.depth > startingDepth) {
+                // We are inside a sub-call. Skip this instruction entirely.
+                // We do NOT increment `validStepsFound`.
+                // We do increment `totalScanned` (consumed work).
+                continue;
+            }
+            moved++; // We physically moved the iterator (and it counts as a move we might want to render if not skipping)
+            // Wait, "moved" logic in my previous code was for index calculation.
+            // If we "continue" above, we effectively skipped it, so we shouldn't count it as a "step" for the UI?
+            // Actually, `moved` variable here tracks how many raw iterator steps we took,
+            // so we can update `currentStepIndex`. We MUST increment `moved` for EVERY iterator.next().
+            // BUT `validStepsFound` is what controls the loop exit.
+
+            // So:
+            // if (skipContract && log.depth > startingDepth) { continue; } -> moved++ happens implicity?
+            // No, I need to restructure the loop slightly to ensure `moved` tracks iterator.next().
+
+
+            // 1. Check Breakpoints (Always interrupt!)
+            if (shouldStop(log)) {
+                hitBreakpoint = true;
+                // We stopped AT the instruction that triggers the breakpoint.
+                validStepsFound++;
+                break;
+            }
+
+            // 2. Check Filter
+            if (isFiltering) {
+                if (matchesFilter(log)) {
+                    validStepsFound++;
+                }
+            } else {
+                validStepsFound++;
+            }
         }
+
 
         if (moved > 0 && log) {
             const newIndex = currentStepIndex + moved;
             setCurrentStepIndex(newIndex);
             // Use dynamicTotalSteps to preserve the pre-calculated count
-            // Pass iterator for peek functionality
             updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
+
+            if (hitBreakpoint) {
+                // Stop auto-play if active
+                setIsPlaying(false);
+            }
         }
-    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
+    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);
+
+
 
     const stepBackward = useCallback((count = 1) => {
         if (!iterator || !txInfo) return;
         const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
         let moved = 0;
         let log: log_infos | null = null;
+        let hitBreakpoint = false; // Breakpoints in reverse? Maybe, but usually filters are the main concern for navigation.
 
-        while (moved < steps && iterator.prev()) {
+        // MODE 1: Normal Step Back (or Filter Skipping Back)
+        const isFiltering = filters.length > 0;
+
+        let validStepsFound = 0;
+        let totalScanned = 0;
+        const SCAN_LIMIT = 10_000_000;
+        const startingDepth = currentLogRef.current?.depth ?? 0;
+
+        while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
+            if (!iterator.prev()) break; // End of trace (start)
+
             log = iterator.current_log();
+            if (!log) break;
+
+            totalScanned++;
             moved++;
+
+            // 0. SKIP CONTRACT CHECK (Reverse)
+            // If we are skipping, we ignore anything deeper than startingDepth.
+            // Note: In reverse, "startingDepth" is the depth we *were* at.
+            // If we were at depth 0, and we step back into depth 1 (returning from a call?),
+            // we should skip it.
+            // Wait, if I am at depth 0, `prev` could be the `RETURN` of a sub-call (depth 1).
+            // So yes, `log.depth > startingDepth` means we are stepping BACK into a sub-call.
+            if (skipContract && log.depth > startingDepth) {
+                continue;
+            }
+
+            // 1. Check Breakpoints
+
+            if (shouldStop(log)) {
+                hitBreakpoint = true;
+                validStepsFound++;
+                break;
+            }
+
+            // 2. Check Filter
+            if (isFiltering) {
+                if (matchesFilter(log)) {
+                    validStepsFound++;
+                }
+            } else {
+                validStepsFound++;
+            }
         }
 
         if (moved > 0 && log) {
@@ -725,8 +928,12 @@ export const useApollo = () => {
             setCurrentStepIndex(newIndex);
             // Pass iterator for peek functionality
             updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
+
+            if (hitBreakpoint) {
+                setIsPlaying(false);
+            }
         }
-    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
+    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop]);
 
     const next = useCallback((count = 1) => {
         stepForward(count);
@@ -736,9 +943,18 @@ export const useApollo = () => {
         stepBackward(count);
     }, [stepBackward]);
 
-    const setBreakpoint = useCallback((bp: Breakpoint) => {
-        // TODO: Implement breakpoints
+    const setBreakpointWrapper = useCallback((bp: Breakpoint) => {
+        setBreakpoints(prev => {
+            // Avoid duplicates by ID
+            if (prev.find(p => p.id === bp.id)) return prev;
+            return [...prev, bp];
+        });
     }, []);
+
+    const removeBreakpoint = useCallback((id: string) => {
+        setBreakpoints(prev => prev.filter(bp => bp.id !== id));
+    }, []);
+
 
     // 12. Computed Data
     const visibleStack: VisibleStackWindow = useMemo(() => {
@@ -883,9 +1099,21 @@ export const useApollo = () => {
         // Navigation
         next,
         prev,
-        setBreakpoint,
+        setBreakpoint: setBreakpointWrapper, // Use the new wrapper
+        removeBreakpoint,
+        filters,
+        setFilters,
+        breakpoints,
+
+        // Skip Contract
+        skipContract,
+        setSkipContract,
+
+
+
 
         // Auto-play
+
         isPlaying,
         togglePlay,
         speed,
