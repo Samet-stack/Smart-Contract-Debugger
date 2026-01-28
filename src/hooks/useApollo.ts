@@ -248,9 +248,9 @@ export const useApollo = () => {
 
         try {
             if (typeof Apollo === 'undefined') {
-                // @ts-expect-error Apollo is provided by a global script
                 throw new Error("Apollo global not found. Is apollo-engine.js loaded?");
             }
+
 
 
             const config = {
@@ -470,142 +470,55 @@ export const useApollo = () => {
     }, [filters]);
 
 
-    const stepForward = useCallback((count = 1) => {
+    // Unified async step function for both forward and backward navigation
+    const step = useCallback(async (direction: 'forward' | 'backward', count = 1) => {
+
         if (!iterator || !txInfo) return;
+
+        const isForward = direction === 'forward';
         const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
+
         let moved = 0;
         let log: log_infos | null = null;
         let lastValidLog: log_infos | null = null;
         let movedToLastValid = 0;
         let hitBreakpoint = false;
 
-        // MODE 1: Normal Step (or Filter Skipping)
-        // If we have filters, "Step 1" means "Find NEXT match"
         const isFiltering = filters.length > 0;
-
-        // We loop until we moved 'steps' VALID times (usually 1)
-        // In filter mode, 1 valid step means finding 1 matching instruction
-        let validStepsFound = 0;
-
-        // Safety break for huge traces
-        let totalScanned = 0;
-        // Increase limit to 10M for large traces
-        const SCAN_LIMIT = 10_000_000;
-
-        // SKIP CONTRACT STATE
-        // If we are "skipping contract", we need to track the depth where we started skipping.
-        // We only stop skipping when we return to this depth (or valid lower depth).
-        // Actually, simplest logic: If skipContract is ON, we simply treat "depth > currentDepth" as "skip".
-        // But we need to know what "currentDepth" was BEFORE we started stepping?
-        // No, "Skip Contract" usually means "Don't show instructions deeper than CURRENT depth".
-        // So if we are at depth 0, and next instr is depth 1, we skip until depth 0 again.
-        const startingDepth = currentLogRef.current?.depth ?? 0;
-
-        while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
-            if (!iterator.next()) break; // End of trace
-
-            log = iterator.current_log();
-            if (!log) break;
-
-            totalScanned++;
-            moved++; // Always count the iterator move, even if we skip by depth
-
-            // 0. SKIP CONTRACT CHECK
-            // If skipContract is ON, and we went DEEPER than starting depth, this step is "invalid" (skipped)
-            // UNLESS it matches a filter? Usually "Skip Contract" overrides filters inside that contract.
-            if (skipContract && log.depth > startingDepth) {
-                // We are inside a sub-call. Skip this instruction entirely.
-                // We do NOT increment `validStepsFound`.
-                // We do increment `totalScanned` (consumed work).
-                continue;
-            }
-            // 1. Check Breakpoints (Always interrupt!)
-            if (shouldStop(log)) {
-                hitBreakpoint = true;
-                // We stopped AT the instruction that triggers the breakpoint.
-                validStepsFound++;
-                lastValidLog = log;
-                movedToLastValid = moved;
-                break;
-            }
-
-            // 2. Check Filter
-            if (isFiltering) {
-                if (matchesFilter(log)) {
-                    validStepsFound++;
-                    lastValidLog = log;
-                    movedToLastValid = moved;
-                }
-            } else {
-                validStepsFound++;
-                lastValidLog = log;
-                movedToLastValid = moved;
-            }
-        }
-
-
-        if (validStepsFound > 0 && lastValidLog) {
-            const rewindCount = moved - movedToLastValid;
-            for (let i = 0; i < rewindCount; i++) {
-                if (!iterator.prev()) break;
-            }
-            const newIndex = currentStepIndex + movedToLastValid;
-            setCurrentStepIndex(newIndex);
-            // Use dynamicTotalSteps to preserve the pre-calculated count
-            updateFromLog(lastValidLog, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
-
-            if (hitBreakpoint) {
-                // Stop auto-play if active
-                setIsPlaying(false);
-            }
-        } else if (moved > 0) {
-            for (let i = 0; i < moved; i++) {
-                if (!iterator.prev()) break;
-            }
-        }
-    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);
-
-
-
-    const stepBackward = useCallback((count = 1) => {
-        if (!iterator || !txInfo) return;
-        const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
-        let moved = 0;
-        let log: log_infos | null = null;
-        let lastValidLog: log_infos | null = null;
-        let movedToLastValid = 0;
-        let hitBreakpoint = false; // Breakpoints in reverse? Maybe, but usually filters are the main concern for navigation.
-
-        // MODE 1: Normal Step Back (or Filter Skipping Back)
-        const isFiltering = filters.length > 0;
-
         let validStepsFound = 0;
         let totalScanned = 0;
         const SCAN_LIMIT = 10_000_000;
+        const CHUNK_SIZE = 500; // Drastically reduced from 5000 to keep UI responsive
         const startingDepth = currentLogRef.current?.depth ?? 0;
 
-        while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
-            if (!iterator.prev()) break; // End of trace (start)
 
-            log = iterator.current_log();
+
+        // Iterator methods based on direction
+        const advance = () => isForward ? iterator.next() : iterator.prev();
+        const rewind = () => isForward ? iterator.prev() : iterator.next();
+
+        while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
+            // Yield to event loop periodically
+            if (totalScanned > 0 && totalScanned % CHUNK_SIZE === 0) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            if (!advance()) break; // End of trace
+
+
+            log = iterator.current_log() ?? null;
             if (!log) break;
+
 
             totalScanned++;
             moved++;
 
-            // 0. SKIP CONTRACT CHECK (Reverse)
-            // If we are skipping, we ignore anything deeper than startingDepth.
-            // Note: In reverse, "startingDepth" is the depth we *were* at.
-            // If we were at depth 0, and we step back into depth 1 (returning from a call?),
-            // we should skip it.
-            // Wait, if I am at depth 0, `prev` could be the `RETURN` of a sub-call (depth 1).
-            // So yes, `log.depth > startingDepth` means we are stepping BACK into a sub-call.
+            // Skip contract check: ignore instructions deeper than starting depth
             if (skipContract && log.depth > startingDepth) {
                 continue;
             }
 
-            // 1. Check Breakpoints
-
+            // Check breakpoints (always interrupt)
             if (shouldStop(log)) {
                 hitBreakpoint = true;
                 validStepsFound++;
@@ -614,7 +527,7 @@ export const useApollo = () => {
                 break;
             }
 
-            // 2. Check Filter
+            // Check filter
             if (isFiltering) {
                 if (matchesFilter(log)) {
                     validStepsFound++;
@@ -629,32 +542,47 @@ export const useApollo = () => {
         }
 
         if (validStepsFound > 0 && lastValidLog) {
+            // Rewind to the last valid position if we overshot
             const rewindCount = moved - movedToLastValid;
             for (let i = 0; i < rewindCount; i++) {
-                if (!iterator.next()) break;
+                if (!rewind()) break;
             }
-            const newIndex = currentStepIndex - movedToLastValid;
+
+            const indexDelta = isForward ? movedToLastValid : -movedToLastValid;
+            const newIndex = currentStepIndex + indexDelta;
             setCurrentStepIndex(newIndex);
-            // Pass iterator for peek functionality
             updateFromLog(lastValidLog, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
 
             if (hitBreakpoint) {
                 setIsPlaying(false);
             }
-        } else if (moved > 0) {
-            for (let i = 0; i < moved; i++) {
-                if (!iterator.next()) break;
+        } else {
+            // No valid steps found (e.g., filtered out everything or hit scan limit)
+            if (totalScanned >= SCAN_LIMIT) {
+                console.warn(`Scan limit reached (${SCAN_LIMIT} steps). Stopped scanning.`);
+                setIsPlaying(false); // Stop autoplay if limit reached
+                // Optionally: Trigger a UI toast/notification here if you had a toast system
+            }
+
+            if (moved > 0) {
+                // Rewind all moves if no valid step found
+                for (let i = 0; i < moved; i++) {
+                    if (!rewind()) break;
+                }
             }
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);
 
+
     const next = useCallback((count = 1) => {
-        stepForward(count);
-    }, [stepForward]);
+        step('forward', count).catch(console.error);
+    }, [step]);
 
     const prev = useCallback((count = 1) => {
-        stepBackward(count);
-    }, [stepBackward]);
+        step('backward', count).catch(console.error);
+    }, [step]);
+
+
 
     const setBreakpointWrapper = useCallback((bp: Breakpoint) => {
         setBreakpoints(prev => {
@@ -687,17 +615,29 @@ export const useApollo = () => {
     const [speed, setSpeed] = useState(40);
     const [stepSize, setStepSize] = useState(1);
 
+    // Ref to track processing state to preventing overlapping steps
+    const isProcessingRef = useRef(false);
+
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (isPlaying) {
             const delay = Math.max(50, 1000 - (speed * 9));
-            interval = setInterval(() => {
-                if (isPlaying === 'forward') stepForward(stepSize);
-                else if (isPlaying === 'backward') stepBackward(stepSize);
+            interval = setInterval(async () => {
+                if (isProcessingRef.current) return; // Skip if still processing previous step
+
+                isProcessingRef.current = true;
+                try {
+                    if (isPlaying === 'forward') await step('forward', stepSize);
+                    else if (isPlaying === 'backward') await step('backward', stepSize);
+                } finally {
+                    isProcessingRef.current = false;
+                }
             }, delay);
         }
         return () => clearInterval(interval);
-    }, [isPlaying, speed, stepSize, stepForward, stepBackward]);
+    }, [isPlaying, speed, stepSize, step]);
+
+
 
     const togglePlay = (direction: 'forward' | 'backward' = 'forward') => {
         setIsPlaying(current => (current === direction ? false : direction));

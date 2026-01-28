@@ -9,8 +9,10 @@ import { useAliases } from "../../context/AliasContext";
 
 interface TxInstrsViewProps {
     data: TxInstrs;
-    className?: string; // className is kept but usually not needed for border anymore
+    className?: string;
+    showAliases?: boolean; // Control whether to show aliases
 }
+
 
 // Sous-composant pour une ligne label: valeur
 function InfoRow({ label, value, valueColor = "text-gray-700 dark:text-gray-200" }: { label: string; value: string | number; valueColor?: string }) {
@@ -36,11 +38,14 @@ interface InstructionBlockProps {
     instr: InstructionInfo | null;
     showContext?: boolean;
     showMemoryChanges?: boolean;
+    showAliases?: boolean;
 }
 
-function InstructionBlock({ title, instr, showContext = true, showMemoryChanges = true }: InstructionBlockProps) {
+
+function InstructionBlock({ title, instr, showContext = true, showMemoryChanges = true, showAliases = true }: InstructionBlockProps) {
     const { findAlias } = useAliases();
-    const alias = instr?.address ? findAlias(instr.address) : undefined;
+    const alias = showAliases && instr?.address ? findAlias(instr.address) : undefined;
+
 
     if (!instr) {
         return (
@@ -156,7 +161,7 @@ function InstructionBlock({ title, instr, showContext = true, showMemoryChanges 
     );
 }
 
-export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps) {
+export default function TxInstrsView({ data, className = "", showAliases = true }: TxInstrsViewProps) {
     return (
         <div className={`${className} space-y-6`}>
             {/* Header avec Gas - Intégré en haut du contenu */}
@@ -177,12 +182,13 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
             {/* Separator discret sous le header gas */}
             {/* <div className="border-t border-gray-100 dark:border-gray-800" /> */}
 
-            <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} showContext={true} showMemoryChanges={true} />
+            <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} showContext={true} showMemoryChanges={true} showAliases={showAliases} />
 
             {/* Separator entre Last et Next */}
             <div className="border-t border-gray-100 dark:border-gray-800" />
 
-            <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} showContext={true} showMemoryChanges={true} />
+            <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} showContext={true} showMemoryChanges={true} showAliases={showAliases} />
         </div>
     );
 }
+

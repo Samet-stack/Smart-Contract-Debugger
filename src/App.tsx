@@ -189,16 +189,49 @@ export default function App() {
   const [memoryMin, setMemoryMin] = useState<number>(0);
   const [memoryMax, setMemoryMax] = useState<number>(32);
   const [metacall, setMetacall] = useState(false);
-  const [alias, setAlias] = useState(false);
-  // REMOVED local skipContract state
+  const [showAliases, setShowAliases] = useState(true); // Renamed for clarity
+
+  // CALL-type opcodes for Metacall breakpoint
+  const METACALL_OPCODES = ['CALL', 'STATICCALL', 'DELEGATECALL', 'CALLCODE', 'CREATE', 'CREATE2'];
+
+  // Handle Metacall toggle - adds/removes CALL-type opcodes from filters
+  const handleMetacallToggle = (enabled: boolean) => {
+    setMetacall(enabled);
+    if (enabled) {
+      // Add CALL opcodes to filters (avoiding duplicates)
+      setFilters(prev => {
+        const newFilters = [...prev];
+        METACALL_OPCODES.forEach(op => {
+          if (!newFilters.includes(op)) {
+            newFilters.push(op);
+          }
+        });
+        return newFilters;
+      });
+    } else {
+      // Remove CALL opcodes from filters
+      setFilters(prev => prev.filter(f => !METACALL_OPCODES.includes(f)));
+    }
+  };
 
 
   const addBreakpoint = (type: BreakpointType, inputValue: string, setInput: (v: string) => void) => {
     if (!inputValue) return;
-    if (!/^0x[0-9a-fA-F]+$/.test(inputValue)) {
-      alert("Invalid format! Must start with 0x...");
-      return;
+
+    // Strict validation for Storage/Transient keys (32 bytes = 66 chars with 0x)
+    if (type === "Storage" || type === "Transient") {
+      if (!/^0x[0-9a-fA-F]{64}$/.test(inputValue)) {
+        alert("Invalid format! Must be a 32-byte hex string (0x + 64 chars).");
+        return;
+      }
+    } else {
+      // Basic hex validation for others (PC, etc.)
+      if (!/^0x[0-9a-fA-F]+$/.test(inputValue)) {
+        alert("Invalid format! Must start with 0x...");
+        return;
+      }
     }
+
     const newBp: Breakpoint = {
       id: Date.now().toString() + Math.random().toString(),
       type,
@@ -217,6 +250,7 @@ export default function App() {
 
     setInput("");
   };
+
 
 
   const memoryRangeEnabled = breakpoints.some(bp => bp.type === "Memory");
@@ -491,21 +525,23 @@ export default function App() {
                         type="checkbox"
                         className="sr-only peer"
                         checked={metacall}
-                        onChange={(e) => setMetacall(e.target.checked)}
+                        onChange={(e) => handleMetacallToggle(e.target.checked)}
                       />
+
                       <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Alias</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Show Aliases</span>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         className="sr-only peer"
-                        checked={alias}
-                        onChange={(e) => setAlias(e.target.checked)}
+                        checked={showAliases}
+                        onChange={(e) => setShowAliases(e.target.checked)}
                       />
+
                       <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
                     </label>
                   </div>
@@ -541,8 +577,9 @@ export default function App() {
             </Card>
 
             <Card title="Instructions">
-              <TxInstrsView data={txInstrsData} />
+              <TxInstrsView data={txInstrsData} showAliases={showAliases} />
             </Card>
+
           </div>
 
           {/* ===== RIGHT COLUMN (4/12 on LG, 12/12 on MD) ===== */}

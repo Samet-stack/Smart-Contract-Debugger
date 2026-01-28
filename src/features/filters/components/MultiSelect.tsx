@@ -85,36 +85,45 @@ export default function MultiSelect({
     if (e.key === "ArrowDown") {
       e.preventDefault();
       // On descend dans la liste (sans dépasser la fin)
-      setHighlightedIndex(prev => (prev < filteredOptions.length - 1 ? prev + 1 : prev));
-      if (!isOpen) setIsOpen(true);
+      if (!isOpen) {
+        setIsOpen(true);
+        setHighlightedIndex(0);
+      } else {
+        setHighlightedIndex(prev => (prev < filteredOptions.length - 1 ? prev + 1 : prev));
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       // On monte dans la liste (sans dépasser le début)
-      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
+      if (!isOpen) {
+        setIsOpen(true);
+        setHighlightedIndex(filteredOptions.length - 1);
+      } else {
+        setHighlightedIndex(prev => (prev > 0 ? prev - 1 : prev));
+      }
     } else if (e.key === "Enter") {
-      e.preventDefault();
+      e.preventDefault(); // Prevent form submission if inside a form
       if (isOpen && filteredOptions.length > 0) {
-        // If menu is open, select highlighted item
+        // If menu is open, toggle highlighted item
         toggleOption(filteredOptions[highlightedIndex]);
       } else if (query && allowCustom) {
-        // Else if allowed, add custom value
-        // If validation function provided, use it
+        // Handle custom value PC (hex) entry
         if (validateCustomValue && !validateCustomValue(query)) {
-          // If invalid, do nothing (or show error)
+          // Invalid custom value
           return;
         }
-
-        // If allowed (allowCustom), add typed value
         if (!selected.includes(query)) {
           onChange([...selected, query]);
         }
         setQuery("");
       }
+    } else if (e.key === "Tab") {
+      if (isOpen) setIsOpen(false);
     } else if (e.key === "Backspace" && !query && selected.length > 0) {
       // If Backspace and empty, remove last tag
       onChange(selected.slice(0, -1));
     }
   };
+
 
   const removeOption = (option: string, e: React.MouseEvent) => {
     e.stopPropagation();

@@ -172,8 +172,9 @@ export const buildFullMemoryMappings = (
 ): FullMemoryMapping[] => {
     // Extract the actual Map from logMap structure if needed
     const actualLogMap: Map<number, log_infos> | undefined =
-        logMap?.instr_map instanceof Map ? logMap.instr_map :
-        logMap instanceof Map ? logMap : undefined;
+        logMap && 'instr_map' in logMap && logMap.instr_map instanceof Map ? logMap.instr_map :
+            logMap instanceof Map ? logMap : undefined;
+
 
     if (!memoryLogIds || !actualLogMap) {
         return [];
