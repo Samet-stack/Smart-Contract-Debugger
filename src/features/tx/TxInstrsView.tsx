@@ -5,6 +5,7 @@
 
 import Badge from "../../ui-lib/components/Badge";
 import type { TxInstrs, InstructionInfo } from "../../types/TxInstrs";
+import { useAliases } from "../../context/AliasContext";
 
 interface TxInstrsViewProps {
     data: TxInstrs;
@@ -38,6 +39,9 @@ interface InstructionBlockProps {
 }
 
 function InstructionBlock({ title, instr, showContext = true, showMemoryChanges = true }: InstructionBlockProps) {
+    const { findAlias } = useAliases();
+    const alias = instr?.address ? findAlias(instr.address) : undefined;
+
     if (!instr) {
         return (
             <div>
@@ -83,6 +87,11 @@ function InstructionBlock({ title, instr, showContext = true, showMemoryChanges 
                 {instr.address && (
                     <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                         <span className="text-gray-500 text-xs">@:</span>
+                        {alias?.label && (
+                            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1">
+                                {alias.label}
+                            </p>
+                        )}
                         <p className="font-mono text-xs text-gray-700 dark:text-gray-300 mt-1 break-all">
                             {instr.address}
                         </p>

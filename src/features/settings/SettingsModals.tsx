@@ -3,6 +3,7 @@ import Button from "../../ui-lib/components/Button";
 import Input from "../../ui-lib/components/Input";
 import Modal from "../../ui-lib/components/Modal";
 import type { SettingsTab } from "./SettingsMenu";
+import { useAliases } from "../../context/AliasContext";
 
 interface SettingsModalsProps {
     activeTab: SettingsTab | null;
@@ -16,29 +17,15 @@ export default function SettingsModals({ activeTab, onClose }: SettingsModalsPro
     const [nodeUrl, setNodeUrl] = useState("https://app.functori.com/nod...");
 
     // 2. Alias Settings State
-    interface Alias {
-        id: string;
-        label: string;
-        address: string;
-    }
-    const [aliases, setAliases] = useState<Alias[]>([]);
+    const { aliases, addAlias, removeAlias } = useAliases();
     const [newAliasLabel, setNewAliasLabel] = useState("");
     const [newAliasAddress, setNewAliasAddress] = useState("");
 
     const handleAddAlias = () => {
         if (!newAliasLabel || !newAliasAddress) return;
-        const newAlias: Alias = {
-            id: Date.now().toString(),
-            label: newAliasLabel,
-            address: newAliasAddress,
-        };
-        setAliases([...aliases, newAlias]);
+        addAlias(newAliasLabel, newAliasAddress);
         setNewAliasLabel("");
         setNewAliasAddress("");
-    };
-
-    const handleRemoveAlias = (id: string) => {
-        setAliases(aliases.filter(alias => alias.id !== id));
     };
 
     // 3. Shortcuts Data
@@ -155,7 +142,7 @@ export default function SettingsModals({ activeTab, onClose }: SettingsModalsPro
                                     <span className={`font-mono text-[10px] tracking-wide ${getAddressColor(alias.address)}`}>{alias.address}</span>
                                 </div>
                                 <button
-                                    onClick={() => handleRemoveAlias(alias.id)}
+                                    onClick={() => removeAlias(alias.id)}
                                     className="text-gray-300 hover:text-red-500 transition-colors p-2 opacity-0 group-hover:opacity-100"
                                     title="Remove alias"
                                 >
