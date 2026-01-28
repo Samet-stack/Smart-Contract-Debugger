@@ -83,6 +83,7 @@ export const useApollo = () => {
 
     // 8. Current log reference for extracting all data
     const currentLogRef = useRef<log_infos | null>(null);
+    const isProcessingRef = useRef(false);
 
     // 8.5. Previous instruction log (from peek backward) - for LAST_RUN_INSTR
     const [prevLogData, setPrevLogData] = useState<log_infos | null>(null);
@@ -472,8 +473,10 @@ export const useApollo = () => {
 
     // Unified async step function for both forward and backward navigation
     const step = useCallback(async (direction: 'forward' | 'backward', count = 1) => {
-
         if (!iterator || !txInfo) return;
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+        try {
 
         const isForward = direction === 'forward';
         const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
@@ -571,6 +574,9 @@ export const useApollo = () => {
                 }
             }
         }
+        } finally {
+            isProcessingRef.current = false;
+        }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);
 
 
@@ -615,23 +621,13 @@ export const useApollo = () => {
     const [speed, setSpeed] = useState(40);
     const [stepSize, setStepSize] = useState(1);
 
-    // Ref to track processing state to preventing overlapping steps
-    const isProcessingRef = useRef(false);
-
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (isPlaying) {
             const delay = Math.max(50, 1000 - (speed * 9));
-            interval = setInterval(async () => {
-                if (isProcessingRef.current) return; // Skip if still processing previous step
-
-                isProcessingRef.current = true;
-                try {
-                    if (isPlaying === 'forward') await step('forward', stepSize);
-                    else if (isPlaying === 'backward') await step('backward', stepSize);
-                } finally {
-                    isProcessingRef.current = false;
-                }
+            interval = setInterval(() => {
+                if (isPlaying === 'forward') step('forward', stepSize).catch(console.error);
+                else if (isPlaying === 'backward') step('backward', stepSize).catch(console.error);
             }, delay);
         }
         return () => clearInterval(interval);

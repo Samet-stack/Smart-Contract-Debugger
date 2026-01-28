@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
 import { cn } from "./ui-lib/utils/cn"; // Import cn utility
 import Button from "./ui-lib/components/Button";
@@ -28,6 +28,9 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import S
 
 import StorageView from "./features/storage/StorageView"; // Import StorageView
 import TransientStorageView from "./features/storage/TransientStorageView"; // Import TransientStorageView
+
+// CALL-type opcodes for Metacall breakpoint
+const METACALL_OPCODES = ["CALL", "STATICCALL", "DELEGATECALL", "CALLCODE", "CREATE", "CREATE2"];
 
 export default function App() {
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
@@ -191,8 +194,24 @@ export default function App() {
   const [metacall, setMetacall] = useState(false);
   const [showAliases, setShowAliases] = useState(true); // Renamed for clarity
 
-  // CALL-type opcodes for Metacall breakpoint
-  const METACALL_OPCODES = ['CALL', 'STATICCALL', 'DELEGATECALL', 'CALLCODE', 'CREATE', 'CREATE2'];
+  const metacallAddedRef = useRef<Set<string>>(new Set());
+
+  const handleFiltersChange = useCallback((nextFilters: string[]) => {
+    setFilters(prev => {
+      if (metacall) {
+        const prevSet = new Set(prev);
+        const nextSet = new Set(nextFilters);
+
+        METACALL_OPCODES.forEach(op => {
+          // If user removes an opcode or adds one manually, don't treat it as auto-added
+          if (!nextSet.has(op) || !prevSet.has(op)) {
+            metacallAddedRef.current.delete(op);
+          }
+        });
+      }
+      return nextFilters;
+    });
+  }, [setFilters, metacall]);
 
   // Handle Metacall toggle - adds/removes CALL-type opcodes from filters
   const handleMetacallToggle = (enabled: boolean) => {
@@ -200,17 +219,15 @@ export default function App() {
     if (enabled) {
       // Add CALL opcodes to filters (avoiding duplicates)
       setFilters(prev => {
-        const newFilters = [...prev];
-        METACALL_OPCODES.forEach(op => {
-          if (!newFilters.includes(op)) {
-            newFilters.push(op);
-          }
-        });
-        return newFilters;
+        const additions = METACALL_OPCODES.filter(op => !prev.includes(op));
+        metacallAddedRef.current = new Set(additions);
+        return additions.length > 0 ? [...prev, ...additions] : prev;
       });
     } else {
-      // Remove CALL opcodes from filters
-      setFilters(prev => prev.filter(f => !METACALL_OPCODES.includes(f)));
+      // Remove only opcodes auto-added by metacall
+      const toRemove = metacallAddedRef.current;
+      setFilters(prev => prev.filter(f => !toRemove.has(f)));
+      metacallAddedRef.current.clear();
     }
   };
 
@@ -394,7 +411,7 @@ export default function App() {
             />
 
             {/* Filters */}
-            <InstructionFilters filters={filters} onChange={setFilters} />
+            <InstructionFilters filters={filters} onChange={handleFiltersChange} />
 
 
             {/* Breakpoints */}
