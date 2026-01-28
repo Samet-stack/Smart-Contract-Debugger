@@ -688,13 +688,20 @@ export const useApollo = () => {
         lastStepRef.current = currentStep;
     }, [state?.currentStep, state?.stack]);
 
-    // 11. Navigation Actions
-    const next = useCallback(() => {
+    // 11. Navigation Actions (supports stepping multiple instructions)
+    const stepForward = useCallback((count = 1) => {
         if (!iterator || !txInfo) return;
-        const hasNext = iterator.next();
-        if (hasNext) {
-            const log = iterator.current_log();
-            const newIndex = currentStepIndex + 1;
+        const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
+        let moved = 0;
+        let log: log_infos | null = null;
+
+        while (moved < steps && iterator.next()) {
+            log = iterator.current_log();
+            moved++;
+        }
+
+        if (moved > 0 && log) {
+            const newIndex = currentStepIndex + moved;
             setCurrentStepIndex(newIndex);
             // Use dynamicTotalSteps to preserve the pre-calculated count
             // Pass iterator for peek functionality
@@ -702,17 +709,32 @@ export const useApollo = () => {
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
 
-    const prev = useCallback(() => {
+    const stepBackward = useCallback((count = 1) => {
         if (!iterator || !txInfo) return;
-        const hasPrev = iterator.prev();
-        if (hasPrev) {
-            const log = iterator.current_log();
-            const newIndex = currentStepIndex - 1;
+        const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
+        let moved = 0;
+        let log: log_infos | null = null;
+
+        while (moved < steps && iterator.prev()) {
+            log = iterator.current_log();
+            moved++;
+        }
+
+        if (moved > 0 && log) {
+            const newIndex = currentStepIndex - moved;
             setCurrentStepIndex(newIndex);
             // Pass iterator for peek functionality
             updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps]);
+
+    const next = useCallback((count = 1) => {
+        stepForward(count);
+    }, [stepForward]);
+
+    const prev = useCallback((count = 1) => {
+        stepBackward(count);
+    }, [stepBackward]);
 
     const setBreakpoint = useCallback((bp: Breakpoint) => {
         // TODO: Implement breakpoints
@@ -730,18 +752,19 @@ export const useApollo = () => {
     // 13. Auto-Play Logic
     const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);
     const [speed, setSpeed] = useState(40);
+    const [stepSize, setStepSize] = useState(1);
 
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>;
         if (isPlaying) {
             const delay = Math.max(50, 1000 - (speed * 9));
             interval = setInterval(() => {
-                if (isPlaying === 'forward') next();
-                else if (isPlaying === 'backward') prev();
+                if (isPlaying === 'forward') stepForward(stepSize);
+                else if (isPlaying === 'backward') stepBackward(stepSize);
             }, delay);
         }
         return () => clearInterval(interval);
-    }, [isPlaying, speed, next, prev]);
+    }, [isPlaying, speed, stepSize, stepForward, stepBackward]);
 
     const togglePlay = (direction: 'forward' | 'backward' = 'forward') => {
         setIsPlaying(current => (current === direction ? false : direction));
@@ -867,6 +890,8 @@ export const useApollo = () => {
         togglePlay,
         speed,
         setSpeed,
+        stepSize,
+        setStepSize,
 
         // Advanced
         getCurrentLog

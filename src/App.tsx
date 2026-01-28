@@ -29,7 +29,6 @@ import StorageView from "./features/storage/StorageView"; // Import StorageView
 import TransientStorageView from "./features/storage/TransientStorageView"; // Import TransientStorageView
 
 export default function App() {
-  const [stepSize, setStepSize] = useState(1);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
 
 
@@ -55,6 +54,8 @@ export default function App() {
     togglePlay,
     speed,
     setSpeed,
+    stepSize,
+    setStepSize,
 
     // Sliding Window Stack
     visibleStack,
@@ -117,12 +118,12 @@ export default function App() {
 
     autoPlayInterval.current = window.setInterval(() => {
       if (direction === "forward") {
-        next();
+        next(stepSize);
       } else {
-        prev();
+        prev(stepSize);
       }
     }, delay);
-  }, [next, prev, stopAutoPlay, speed]);
+  }, [next, prev, stopAutoPlay, speed, stepSize]);
 
   // Update interval if speed changes while playing
   // (Optional refinement: restart interval on speed change)
@@ -131,11 +132,11 @@ export default function App() {
   useKeyboardShortcuts({
     onNext: () => {
       stopAutoPlay(); // Stop auto-play on manual step
-      next();
+      next(stepSize);
     },
     onPrev: () => {
       stopAutoPlay();
-      prev();
+      prev(stepSize);
     },
     onToggleAutoNext: () => {
       if (isAutoPlaying === "forward") stopAutoPlay();
@@ -281,10 +282,10 @@ export default function App() {
 
       switch (e.key) {
         case "ArrowRight":
-          next();
+          next(stepSize);
           break;
         case "ArrowLeft":
-          prev();
+          prev(stepSize);
           break;
         case " ": // Space
           e.preventDefault(); // Prevent scrolling
@@ -297,7 +298,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [next, prev]);
+  }, [next, prev, stepSize]);
 
 
 
@@ -406,8 +407,8 @@ export default function App() {
               onSpeedChange={setSpeed}
               stepSize={stepSize}
               onStepSizeChange={setStepSize}
-              onNext={next}
-              onPrev={prev}
+              onNext={() => next(stepSize)}
+              onPrev={() => prev(stepSize)}
               isPlaying={isPlaying}
               onTogglePlay={togglePlay}
             />
