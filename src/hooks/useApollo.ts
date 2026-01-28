@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { DebuggerState, Breakpoint, InstructionInfo, MemorySegment } from '../types/ApolloAPI';
-import type { Breakpoint as EngineBreakpoint } from '../types/ApolloAPI'; // Re-export or just use local definition if needed, but Breakpoint is already imported above
-
+import type { DebuggerState, Breakpoint, InstructionInfo } from '../types/ApolloAPI';
 import type { StackItem } from '../types/StackItem';
 import type { StorageItem, TransientStorageItem, StorageUpdate, TransientStorageUpdate } from '../types/Storage';
-import type {
-    transaction_info,
-    trace_iterator,
-    log_infos,
-    stack as EngineStack,
-    storage as EngineStorage,
-    transient_storage as EngineTransientStorage,
-    instr
-} from '../types/ApolloEngine';
+import type { transaction_info, trace_iterator, log_infos } from '../types/ApolloEngine';
+import type { ContractOpcode, FullMemoryMapping } from './apolloMappers';
+import {
+    mapStorage,
+    mapTransientStorage,
+    mapContractCode,
+    bufferToHex,
+    buildFullMemoryMappings,
+    mapLogToState
+} from './apolloMappers';
+
+export type { ContractOpcode } from './apolloMappers';
 
 export type ApolloStatus = "Ready" | "Loading" | "Error";
 
@@ -20,13 +21,6 @@ export type ApolloStatus = "Ready" | "Loading" | "Error";
 export interface VisibleStackWindow {
     current: StackItem | null;  // Green - current step
     previous: StackItem | null; // Red - previous step
-}
-
-// Type for contract code/opcodes
-export interface ContractOpcode {
-    pc: number;
-    op: string;
-    arg?: string;
 }
 
 // Type for transaction info exposed to UI
@@ -38,338 +32,6 @@ export interface TransactionDetails {
     blockHash: string;
     transactionIndex: number;
 }
-
-// Helper to extract actual Map from logMap structure
-const getActualLogMap = (logMap: any): Map<number, log_infos> | undefined => {
-    if (logMap?.instr_map instanceof Map) return logMap.instr_map;
-    if (logMap instanceof Map) return logMap;
-    return undefined;
-};
-
-// Helper: Map Engine Stack to UI StackItem
-const mapStack = (engineStack: EngineStack, logMap?: any): StackItem[] => {
-    if (!engineStack || !Array.isArray(engineStack)) return [];
-
-    const actualLogMap = getActualLogMap(logMap);
-
-    return engineStack.map((item, index) => {
-        let modifiedAt = { pc: 0, opcode: 'GENESIS' };
-        if (actualLogMap && item.log_id !== undefined) {
-            const log = actualLogMap.get(item.log_id);
-            if (log) {
-                modifiedAt = {
-                    pc: log.next_instr.pc,
-                    opcode: log.next_instr.op
-                };
-            }
-        }
-
-        return {
-            value: item.value,
-            label: `stack[${index}]`,
-            status: 'neutral',
-            modifiedAt
-        };
-    });
-};
-
-// Helper: Map Engine Storage to UI StorageItem[]
-const mapStorage = (engineStorage: EngineStorage | undefined, logMap: any, storageUpdate?: { key: string; value: string; creating_slot: boolean }): StorageItem[] => {
-    if (!engineStorage) return [];
-
-    const actualLogMap = getActualLogMap(logMap);
-    const items: StorageItem[] = [];
-
-    // Handle both Map and plain object
-    const entries: [string, { value: string; log_id?: number }][] =
-        engineStorage instanceof Map
-            ? Array.from(engineStorage.entries())
-            : Object.entries(engineStorage);
-
-    for (const [key, data] of entries) {
-        const isModified = storageUpdate?.key === key;
-
-        // Look up log_id to find who modified this slot
-        let modifiedAt = undefined;
-        if (actualLogMap && data.log_id !== undefined) {
-            const log = actualLogMap.get(data.log_id);
-            if (log) {
-                modifiedAt = {
-                    pc: log.next_instr.pc,
-                    opcode: log.next_instr.op
-                };
-            }
-        }
-
-        items.push({
-            key,
-            value: data.value,
-            logId: data.log_id,
-            isNewSlot: isModified && storageUpdate?.creating_slot,
-            isModifiedInCurrentStep: isModified,
-            modifiedAt
-        });
-    }
-
-    return items;
-};
-
-// Helper: Map Engine Transient Storage to UI TransientStorageItem[]
-const mapTransientStorage = (
-    engineTransient: EngineTransientStorage | undefined,
-    logMap: any,
-    transientUpdate?: { key: string; value: string; creating_slot: boolean }
-): TransientStorageItem[] => {
-    if (!engineTransient) return [];
-
-    const actualLogMap = getActualLogMap(logMap);
-    const items: TransientStorageItem[] = [];
-
-    // Handle both Map and plain object
-    const entries: [string, { value: string; log_id: number }][] =
-        engineTransient instanceof Map
-            ? Array.from(engineTransient.entries())
-            : Object.entries(engineTransient);
-
-    for (const [key, data] of entries) {
-        const isModified = transientUpdate?.key === key;
-
-        let modifiedAt = undefined;
-        if (actualLogMap && data.log_id !== undefined) {
-            const log = actualLogMap.get(data.log_id);
-            if (log) {
-                modifiedAt = {
-                    pc: log.next_instr.pc,
-                    opcode: log.next_instr.op
-                };
-            }
-        }
-
-        items.push({
-            key,
-            value: data.value,
-            logId: data.log_id,
-            isModifiedInCurrentStep: isModified,
-            modifiedAt
-        });
-    }
-
-    return items;
-};
-
-// Helper: Map contract code to UI opcodes
-const mapContractCode = (code: instr[]): ContractOpcode[] => {
-    return code.map(instr => ({
-        pc: instr.pc,
-        op: instr.op,
-        arg: instr.arg
-    }));
-};
-
-// Helper: Convert ArrayBuffer to Hex String
-const bufferToHex = (buffer: ArrayBuffer | undefined): string => {
-    if (!buffer) return "";
-    return "0x" + Array.from(new Uint8Array(buffer))
-        .map(b => b.toString(16).padStart(2, "0"))
-        .join("");
-};
-
-// Type for full memory mappings (like old Apollo)
-export interface FullMemoryMapping {
-    range: string;      // "[0;4]"
-    pc: number;
-    opcode: string;
-}
-
-// Helper: Build full memory mappings from memory.log_ids
-// The WASM engine already provides ranges as keys like "[0;4]", "[4;36]", etc.
-const buildFullMemoryMappings = (
-    memoryLogIds: Map<string, number> | Record<string, number> | undefined,
-    logMap: any // Can be Map or {counter, instr_map} structure
-): FullMemoryMapping[] => {
-    // Extract the actual Map from logMap structure if needed
-    const actualLogMap: Map<number, log_infos> | undefined =
-        logMap?.instr_map instanceof Map ? logMap.instr_map :
-            logMap instanceof Map ? logMap : undefined;
-
-    if (!memoryLogIds || !actualLogMap) {
-        return [];
-    }
-
-    const mappings: FullMemoryMapping[] = [];
-
-    // Keys are already ranges like "[0;4]", "[4;36]", etc.
-    const entries = memoryLogIds instanceof Map
-        ? Array.from(memoryLogIds.entries())
-        : Object.entries(memoryLogIds);
-
-    for (const [rangeKey, logId] of entries) {
-        const srcLog = actualLogMap.get(logId as number);
-        if (srcLog) {
-            mappings.push({
-                range: rangeKey, // Already formatted as "[start;end]"
-                pc: srcLog.next_instr.pc,
-                opcode: srcLog.next_instr.op
-            });
-        }
-    }
-
-    // Sort by start offset (extract number from "[start;end]")
-    mappings.sort((a, b) => {
-        const aStart = parseInt(a.range.slice(1)); // "[0;4]" -> "0"
-        const bStart = parseInt(b.range.slice(1));
-        return aStart - bStart;
-    });
-
-    return mappings;
-};
-
-// Helper: Map Engine Log to DebuggerState
-const mapLogToState = (
-    log: log_infos | undefined,
-    totalSteps: number,
-    currentStep: number,
-    txHash: string,
-    logMap?: Map<number, log_infos>
-): DebuggerState => {
-    if (!log) {
-        return {
-            currentStep: 0,
-            totalSteps,
-            pcCoverage: 0,
-            currentInstruction: null,
-            nextInstruction: null,
-            stack: [],
-            memory: [],
-            storage: [],
-            transientStorage: [],
-            isLoading: false,
-            error: null,
-            traceId: null
-        };
-    }
-
-    // Dynamic total steps to allow exceeding initial estimate
-    const effectiveTotalSteps = Math.max(totalSteps, currentStep + 1);
-
-    const memoryChanges = log.next_instr.memory_update?.map(mu => ({
-        offset: Number(mu.offset),
-        size: Number(mu.size)
-    })) || [];
-
-    const memoryMappings = memoryChanges.map(mc => ({
-        range: `[${mc.offset};${mc.offset + mc.size}]`,
-        pc: log.next_instr.pc,
-        opcode: log.next_instr.op
-    }));
-
-    const currentInstr: InstructionInfo = {
-        pc: log.next_instr.pc,
-        opcode: log.next_instr.op,
-        gas: Number(log.remaining_gas),
-        gasCost: Number(log.next_instr.gas_cost),
-        stepNumber: currentStep + 1, // 1-based index for display
-        totalSteps: effectiveTotalSteps,
-        description: `Executed ${log.next_instr.op}`,
-        memoryMappings,
-        memoryChanges,
-        // Last conditional jump (pc only from engine)
-        lastConditionalJump: log.last_conditional_jump !== undefined ? {
-            pc: log.last_conditional_jump,
-            opcode: "JUMPI",
-            condition: "" // Condition not available in current API
-        } : undefined
-    };
-
-    // Map Stack
-    const mappedStack = mapStack(log.exec_state.stack, logMap);
-
-    // Map Memory (ModifiedAt Logic)
-    const memorySegments: MemorySegment[] = [];
-    const memoryValue = log.exec_state.memory?.value;
-    const memoryLogIds = log.exec_state.memory?.log_ids;
-
-    if (memoryValue) {
-        const uint8Memory = new Uint8Array(memoryValue);
-        for (let i = 0; i < uint8Memory.length; i += 32) {
-            const chunk = uint8Memory.slice(i, i + 32);
-            /* const hexVal = bufferToHex(chunk); // Reuse helper if bufferToHex handles Uint8Array or slice buffer properly */
-            // Manual hex for now to be safe with slice
-            const hexVal = Array.from(chunk)
-                .map(b => b.toString(16).padStart(2, "0"))
-                .join("");
-
-            // Look up log_id for this segment
-            // Keys in memoryLogIds are ranges like "[0;4]", "[4;36]", etc.
-            // We need to find which range contains our offset 'i'
-            let modifiedAt = undefined;
-            if (memoryLogIds && logMap) {
-                const actualLogMap = getActualLogMap(logMap);
-
-                // Find the range that contains offset 'i'
-                const entries = memoryLogIds instanceof Map
-                    ? Array.from(memoryLogIds.entries())
-                    : Object.entries(memoryLogIds);
-
-                for (const [rangeKey, logId] of entries) {
-                    // Parse range "[start;end]"
-                    const match = rangeKey.match(/\[(\d+);(\d+)\]/);
-                    if (match) {
-                        const start = parseInt(match[1]);
-                        const end = parseInt(match[2]);
-                        // Check if our 32-byte chunk starting at 'i' overlaps with this range
-                        if (i >= start && i < end) {
-                            const srcLog = actualLogMap?.get(logId as number);
-                            if (srcLog) {
-                                modifiedAt = { pc: srcLog.next_instr.pc, opcode: srcLog.next_instr.op };
-                            }
-                            break; // Found a match
-                        }
-                    }
-                }
-            }
-
-            memorySegments.push({
-                offset: i,
-                value: "0x" + hexVal,
-                ascii: Array.from(chunk).map(b => (b >= 32 && b <= 126) ? String.fromCharCode(b) : ".").join(""),
-                isModifiedInCurrentStep: false,
-                modifiedAt
-            });
-        }
-    }
-
-    // Map Storage
-    const storageUpdate = log.next_instr.storage_update;
-    const storageItems = mapStorage(log.exec_state.storage, logMap, storageUpdate ? {
-        key: storageUpdate.key,
-        value: storageUpdate.value,
-        creating_slot: storageUpdate.creating_slot
-    } : undefined);
-
-    // Map Transient Storage
-    const transientUpdate = log.next_instr.transient_storage_update;
-    const transientItems = mapTransientStorage(log.exec_state.transient_storage, logMap, transientUpdate ? {
-        key: transientUpdate.key,
-        value: transientUpdate.value,
-        creating_slot: transientUpdate.creating_slot
-    } : undefined);
-
-    return {
-        currentStep,
-        totalSteps,
-        pcCoverage: 0,
-        currentInstruction: currentInstr,
-        nextInstruction: null,
-        stack: mappedStack,
-        memory: memorySegments,
-        storage: storageItems,
-        transientStorage: transientItems,
-        isLoading: false,
-        error: null,
-        traceId: txHash
-    };
-};
 
 export const useApollo = () => {
     // 1. Core Engine State
@@ -401,7 +63,6 @@ export const useApollo = () => {
     const [address, setAddress] = useState<string>("");
     const [gasUsed, setGasUsed] = useState<{ main: string; other: string }>({ main: "0", other: "0" });
 
-    // 6.5. Full Memory Mappings (like old Apollo - shows all regions and who wrote them)
     // 6.5. Full Memory Mappings (like old Apollo - shows all regions and who wrote them)
     const [fullMemoryMappings, setFullMemoryMappings] = useState<FullMemoryMapping[]>([]);
 
@@ -580,12 +241,14 @@ export const useApollo = () => {
         setContractCode([]);
         setTransactionDetails(null);
         setNextInstruction(null);
+        setFilters([]);
+        setBreakpoints([]);
         lastStepRef.current = -1;
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
 
         try {
             if (typeof Apollo === 'undefined') {
-                // @ts-ignore
+                // @ts-expect-error Apollo is provided by a global script
                 throw new Error("Apollo global not found. Is apollo-engine.js loaded?");
             }
 
@@ -643,7 +306,7 @@ export const useApollo = () => {
 
             setStatus("Ready");
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Failed to initialize Apollo:", err);
             setStatus("Error");
         }
@@ -766,7 +429,6 @@ export const useApollo = () => {
 
         const op = log.next_instr.op.toUpperCase();
         const pc = "0x" + log.next_instr.pc.toString(16).toUpperCase(); // Canonical hex PC
-        const pcShort = log.next_instr.pc.toString(); // Decimal PC string if user types that? Assuming hex.
 
         // Check if filter list includes OP or PC
         // Filters usually: ["SSTORE", "0x14"]
@@ -787,7 +449,6 @@ export const useApollo = () => {
         // MODE 1: Normal Step (or Filter Skipping)
         // If we have filters, "Step 1" means "Find NEXT match"
         const isFiltering = filters.length > 0;
-        const maxSearchSteps = isFiltering ? 5000 : steps; // Safety limit for filters
 
         // We loop until we moved 'steps' VALID times (usually 1)
         // In filter mode, 1 valid step means finding 1 matching instruction
@@ -814,6 +475,7 @@ export const useApollo = () => {
             if (!log) break;
 
             totalScanned++;
+            moved++; // Always count the iterator move, even if we skip by depth
 
             // 0. SKIP CONTRACT CHECK
             // If skipContract is ON, and we went DEEPER than starting depth, this step is "invalid" (skipped)
@@ -824,18 +486,6 @@ export const useApollo = () => {
                 // We do increment `totalScanned` (consumed work).
                 continue;
             }
-            moved++; // We physically moved the iterator (and it counts as a move we might want to render if not skipping)
-            // Wait, "moved" logic in my previous code was for index calculation.
-            // If we "continue" above, we effectively skipped it, so we shouldn't count it as a "step" for the UI?
-            // Actually, `moved` variable here tracks how many raw iterator steps we took,
-            // so we can update `currentStepIndex`. We MUST increment `moved` for EVERY iterator.next().
-            // BUT `validStepsFound` is what controls the loop exit.
-
-            // So:
-            // if (skipContract && log.depth > startingDepth) { continue; } -> moved++ happens implicity?
-            // No, I need to restructure the loop slightly to ensure `moved` tracks iterator.next().
-
-
             // 1. Check Breakpoints (Always interrupt!)
             if (shouldStop(log)) {
                 hitBreakpoint = true;
@@ -933,7 +583,7 @@ export const useApollo = () => {
                 setIsPlaying(false);
             }
         }
-    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop]);
+    }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);
 
     const next = useCallback((count = 1) => {
         stepForward(count);
@@ -953,6 +603,10 @@ export const useApollo = () => {
 
     const removeBreakpoint = useCallback((id: string) => {
         setBreakpoints(prev => prev.filter(bp => bp.id !== id));
+    }, []);
+
+    const clearMemoryBreakpoints = useCallback(() => {
+        setBreakpoints(prev => prev.filter(bp => bp.type !== "Memory"));
     }, []);
 
 
@@ -1005,7 +659,7 @@ export const useApollo = () => {
         if (!isExternalContract && contractCode.length === 0 && txInfo.code) {
             setContractCode(mapContractCode(txInfo.code));
         }
-    }, [isExternalContract, txInfo]);
+    }, [isExternalContract, txInfo, contractCode.length]);
 
     // 15. Derive LAST INSTRUCTION (what just executed) from prevLogData
     const derivedLastInstruction = useMemo((): InstructionInfo | null => {
@@ -1101,6 +755,7 @@ export const useApollo = () => {
         prev,
         setBreakpoint: setBreakpointWrapper, // Use the new wrapper
         removeBreakpoint,
+        clearMemoryBreakpoints,
         filters,
         setFilters,
         breakpoints,

@@ -46,11 +46,6 @@ export default function MultiSelect({
     opt.toLowerCase().includes(query.toLowerCase())
   );
 
-  // Reset index on search
-  useEffect(() => {
-    setHighlightedIndex(0);
-  }, [query]);
-
   // Auto-scroll when index changes
   useEffect(() => {
     if (isOpen && optionRefs.current[highlightedIndex]) {
@@ -163,6 +158,7 @@ export default function MultiSelect({
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
+              setHighlightedIndex(0);
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}

@@ -72,7 +72,7 @@ export interface DebuggerState {
 }
 
 export interface ApolloDebuggerAPI {
-    loadTrace(traceData: any): void;
+    loadTrace(traceData: unknown): void;
     getCurrentState(): DebuggerState;
     next(): DebuggerState;
     prev(): DebuggerState;

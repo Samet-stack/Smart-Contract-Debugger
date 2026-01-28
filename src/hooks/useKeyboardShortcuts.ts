@@ -30,6 +30,12 @@ export const useKeyboardShortcuts = ({
             const shift = event.shiftKey;
             // 2. Mapping des touches
             switch (key) {
+                case "ArrowRight":
+                    onNext();
+                    break;
+                case "ArrowLeft":
+                    onPrev();
+                    break;
                 case "n":
                     if (shift) onToggleAutoNext(); // Shift + n -> Toggle Auto Forward
                     else onNext();                 // n -> Next Step

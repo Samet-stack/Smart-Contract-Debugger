@@ -8,7 +8,6 @@ import type { StackItem } from "../../types/StackItem";
 
 interface StackViewProps {
     visibleStack: VisibleStackWindow;
-    historyLength: number;
     fullHistory?: StackItem[];
     neutralItems?: StackItem[]; // Rest of the stack (non-active)
     className?: string;
@@ -28,9 +27,9 @@ function HistoryModal({
     current: StackItem | null;
     neutralItems?: StackItem[];
 }) {
-    if (!isOpen) return null;
-
     const [activeTab, setActiveTab] = useState<'history' | 'fullStack'>('history');
+
+    if (!isOpen) return null;
 
     return (
         <div
@@ -128,7 +127,7 @@ function HistoryModal({
     );
 }
 
-export default function StackView({ visibleStack, historyLength, fullHistory = [], neutralItems = [], className = "" }: StackViewProps) {
+export default function StackView({ visibleStack, fullHistory = [], neutralItems = [], className = "" }: StackViewProps) {
     const [showModal, setShowModal] = useState(false);
     const { current, previous } = visibleStack || { current: null, previous: null };
 

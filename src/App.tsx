@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 import { cn } from "./ui-lib/utils/cn"; // Import cn utility
 import Button from "./ui-lib/components/Button";
@@ -25,7 +25,6 @@ import ContractViewer from "./features/contract/ContractViewer"; // Import Contr
 
 import { useApollo } from "./hooks/useApollo";   // Import Hook
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"; // Import Shortcuts Hook
-import { useRef, useCallback } from "react";
 
 import StorageView from "./features/storage/StorageView"; // Import StorageView
 import TransientStorageView from "./features/storage/TransientStorageView"; // Import TransientStorageView
@@ -42,8 +41,6 @@ export default function App() {
     status,
     stack,
     memory,
-    currentStep,
-    currentOpcode,
     rawState,
     next,
     prev,
@@ -60,27 +57,15 @@ export default function App() {
 
     // Sliding Window Stack
     visibleStack,
-    stackHistoryLength,
     stackHistory,
     loadTransaction,
 
     // NEW: Storage & Transient Storage
     storage,
     transientStorage,
-    storageUpdate,
-    transientStorageUpdate,
 
-    // NEW: Contract Code & Transaction Details
+    // NEW: Contract Code
     contractCode,
-    transactionDetails,
-
-    // NEW: Call/Return Data
-    callData,
-    returnData,
-    selector,
-
-    // NEW: Context Info
-    depth,
     address,
     gasUsed,
     isExternalContract,
@@ -95,6 +80,7 @@ export default function App() {
     breakpoints,
     setBreakpoint,
     removeBreakpoint,
+    clearMemoryBreakpoints,
 
     // Skip Contract
     skipContract,
@@ -110,37 +96,9 @@ export default function App() {
     }
   };
 
-  // --- AUTO-PLAY ENGINE (Manual Interval for UI Control) ---
-  const autoPlayInterval = useRef<number | null>(null);
-  const [isAutoPlaying, setIsAutoPlaying] = useState<"forward" | "backward" | null>(null);
-
   const stopAutoPlay = useCallback(() => {
-    if (autoPlayInterval.current) {
-      clearInterval(autoPlayInterval.current);
-      autoPlayInterval.current = null;
-    }
-    setIsAutoPlaying(null);
-  }, []);
-
-  const startAutoPlay = useCallback((direction: "forward" | "backward") => {
-    stopAutoPlay(); // Reset if already active
-    setIsAutoPlaying(direction);
-
-    // Basic interval logic (converting 0-100 speed to ms delay)
-    // Formula: Max delay 1000ms (slow), Min delay 100ms (fast)
-    const delay = Math.max(50, 1000 - (speed * 9));
-
-    autoPlayInterval.current = window.setInterval(() => {
-      if (direction === "forward") {
-        next(stepSize);
-      } else {
-        prev(stepSize);
-      }
-    }, delay);
-  }, [next, prev, stopAutoPlay, speed, stepSize]);
-
-  // Update interval if speed changes while playing
-  // (Optional refinement: restart interval on speed change)
+    if (isPlaying) togglePlay(isPlaying);
+  }, [isPlaying, togglePlay]);
 
   // --- KEYBOARD SHORTCUTS ---
   useKeyboardShortcuts({
@@ -153,19 +111,17 @@ export default function App() {
       prev(stepSize);
     },
     onToggleAutoNext: () => {
-      if (isAutoPlaying === "forward") stopAutoPlay();
-      else startAutoPlay("forward");
+      togglePlay("forward");
     },
     onToggleAutoPrev: () => {
-      if (isAutoPlaying === "backward") stopAutoPlay();
-      else startAutoPlay("backward");
+      togglePlay("backward");
     },
     onSpeedUp: () => setSpeed(s => Math.min(s + 5, 100)),
     onSpeedDown: () => setSpeed(s => Math.max(s - 5, 0)),
     onTogglePlay: () => {
       // Spacebar toggles forward play by default
-      if (isAutoPlaying) stopAutoPlay();
-      else startAutoPlay("forward");
+      if (isPlaying) togglePlay(isPlaying);
+      else togglePlay("forward");
     }
   });
 
@@ -280,7 +236,7 @@ export default function App() {
       setBreakpoint(newBp); // Use hook setter
     } else {
       // Remove any Memory type breakpoint
-      breakpoints.filter(bp => bp.type === "Memory").forEach(bp => removeBreakpoint(bp.id));
+      clearMemoryBreakpoints();
     }
   };
 
@@ -288,33 +244,7 @@ export default function App() {
   // removeBreakpoint is now imported from hook
 
 
-  // --- Keyboard Shortcuts ---
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key) {
-        case "ArrowRight":
-          next(stepSize);
-          break;
-        case "ArrowLeft":
-          prev(stepSize);
-          break;
-        case " ": // Space
-          e.preventDefault(); // Prevent scrolling
-          togglePlay(); // Toggle run/pause
-          break;
-        // shortcuts A/D for Auto handled by ExecutionPanel state currently,
-        // but could be lifted here if needed.
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [next, prev, stepSize]);
+  // Arrow keys are handled in useKeyboardShortcuts
 
 
 
@@ -621,7 +551,6 @@ export default function App() {
             <Card title="Stack">
               <StackView
                 visibleStack={visibleStack}
-                historyLength={stackHistoryLength}
                 fullHistory={stackHistory}
                 neutralItems={(() => {
                   try {
