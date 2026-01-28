@@ -188,7 +188,6 @@ export default function App() {
   const [transientInput, setTransientInput] = useState("");
   const [memoryMin, setMemoryMin] = useState<number>(0);
   const [memoryMax, setMemoryMax] = useState<number>(32);
-  const [memoryRangeEnabled, setMemoryRangeEnabled] = useState(false);
   const [metacall, setMetacall] = useState(false);
   const [alias, setAlias] = useState(false);
   // REMOVED local skipContract state
@@ -220,9 +219,10 @@ export default function App() {
   };
 
 
+  const memoryRangeEnabled = breakpoints.some(bp => bp.type === "Memory");
+
   const toggleMemoryRange = () => {
     const newState = !memoryRangeEnabled;
-    setMemoryRangeEnabled(newState);
     if (newState) {
       const newBp: Breakpoint = {
         id: Date.now().toString() + Math.random().toString(),

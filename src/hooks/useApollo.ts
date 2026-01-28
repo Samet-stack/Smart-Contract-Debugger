@@ -307,7 +307,26 @@ export const useApollo = () => {
             setStatus("Ready");
 
         } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Unknown error";
             console.error("Failed to initialize Apollo:", err);
+            setState(prev => prev ? {
+                ...prev,
+                isLoading: false,
+                error: message
+            } : {
+                currentStep: 0,
+                totalSteps: 0,
+                pcCoverage: 0,
+                currentInstruction: null,
+                nextInstruction: null,
+                stack: [],
+                memory: [],
+                storage: [],
+                transientStorage: [],
+                isLoading: false,
+                error: message,
+                traceId: null
+            });
             setStatus("Error");
         }
     }, [updateFromLog]);
@@ -337,12 +356,24 @@ export const useApollo = () => {
 
         if (Math.abs(diff) > 1) {
             // JUMP DETECTED (Forward or Backward > 1 step)
-            // We cannot maintain continuous history. Reset or set to current.
-            // Best UX: Show current item as the start of a new history segment.
-            if (latestItem) {
-                setStackHistory([latestItem]);
+            // We cannot maintain continuous history. Preserve what we have on forward jumps,
+            // but reset on backward jumps to avoid showing future history.
+            if (diff > 1) {
+                if (latestItem) {
+                    setStackHistory(prev => {
+                        const newHistory = [...prev, latestItem];
+                        if (newHistory.length > MAX_STACK_HISTORY) {
+                            return newHistory.slice(-MAX_STACK_HISTORY);
+                        }
+                        return newHistory;
+                    });
+                }
             } else {
-                setStackHistory([]);
+                if (latestItem) {
+                    setStackHistory([latestItem]);
+                } else {
+                    setStackHistory([]);
+                }
             }
         } else if (diff === 1) {
             // Sequential Next
@@ -444,6 +475,8 @@ export const useApollo = () => {
         const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
         let moved = 0;
         let log: log_infos | null = null;
+        let lastValidLog: log_infos | null = null;
+        let movedToLastValid = 0;
         let hitBreakpoint = false;
 
         // MODE 1: Normal Step (or Filter Skipping)
@@ -491,6 +524,8 @@ export const useApollo = () => {
                 hitBreakpoint = true;
                 // We stopped AT the instruction that triggers the breakpoint.
                 validStepsFound++;
+                lastValidLog = log;
+                movedToLastValid = moved;
                 break;
             }
 
@@ -498,22 +533,34 @@ export const useApollo = () => {
             if (isFiltering) {
                 if (matchesFilter(log)) {
                     validStepsFound++;
+                    lastValidLog = log;
+                    movedToLastValid = moved;
                 }
             } else {
                 validStepsFound++;
+                lastValidLog = log;
+                movedToLastValid = moved;
             }
         }
 
 
-        if (moved > 0 && log) {
-            const newIndex = currentStepIndex + moved;
+        if (validStepsFound > 0 && lastValidLog) {
+            const rewindCount = moved - movedToLastValid;
+            for (let i = 0; i < rewindCount; i++) {
+                if (!iterator.prev()) break;
+            }
+            const newIndex = currentStepIndex + movedToLastValid;
             setCurrentStepIndex(newIndex);
             // Use dynamicTotalSteps to preserve the pre-calculated count
-            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
+            updateFromLog(lastValidLog, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
 
             if (hitBreakpoint) {
                 // Stop auto-play if active
                 setIsPlaying(false);
+            }
+        } else if (moved > 0) {
+            for (let i = 0; i < moved; i++) {
+                if (!iterator.prev()) break;
             }
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);
@@ -525,6 +572,8 @@ export const useApollo = () => {
         const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
         let moved = 0;
         let log: log_infos | null = null;
+        let lastValidLog: log_infos | null = null;
+        let movedToLastValid = 0;
         let hitBreakpoint = false; // Breakpoints in reverse? Maybe, but usually filters are the main concern for navigation.
 
         // MODE 1: Normal Step Back (or Filter Skipping Back)
@@ -560,6 +609,8 @@ export const useApollo = () => {
             if (shouldStop(log)) {
                 hitBreakpoint = true;
                 validStepsFound++;
+                lastValidLog = log;
+                movedToLastValid = moved;
                 break;
             }
 
@@ -567,20 +618,32 @@ export const useApollo = () => {
             if (isFiltering) {
                 if (matchesFilter(log)) {
                     validStepsFound++;
+                    lastValidLog = log;
+                    movedToLastValid = moved;
                 }
             } else {
                 validStepsFound++;
+                lastValidLog = log;
+                movedToLastValid = moved;
             }
         }
 
-        if (moved > 0 && log) {
-            const newIndex = currentStepIndex - moved;
+        if (validStepsFound > 0 && lastValidLog) {
+            const rewindCount = moved - movedToLastValid;
+            for (let i = 0; i < rewindCount; i++) {
+                if (!iterator.next()) break;
+            }
+            const newIndex = currentStepIndex - movedToLastValid;
             setCurrentStepIndex(newIndex);
             // Pass iterator for peek functionality
-            updateFromLog(log, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
+            updateFromLog(lastValidLog, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
 
             if (hitBreakpoint) {
                 setIsPlaying(false);
+            }
+        } else if (moved > 0) {
+            for (let i = 0; i < moved; i++) {
+                if (!iterator.next()) break;
             }
         }
     }, [iterator, txInfo, currentStepIndex, updateFromLog, dynamicTotalSteps, filters, matchesFilter, shouldStop, skipContract]);

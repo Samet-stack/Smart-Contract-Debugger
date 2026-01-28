@@ -19,8 +19,9 @@ export interface ContractOpcode {
 
 // Helper to extract actual Map from logMap structure
 const getActualLogMap = (logMap: LogMapLike): Map<number, log_infos> | undefined => {
-    if (logMap?.instr_map instanceof Map) return logMap.instr_map;
+    if (!logMap) return undefined;
     if (logMap instanceof Map) return logMap;
+    if ("instr_map" in logMap && logMap.instr_map instanceof Map) return logMap.instr_map;
     return undefined;
 };
 
