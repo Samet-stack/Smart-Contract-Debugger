@@ -33,6 +33,7 @@ import TransientStorageView from "./features/storage/TransientStorageView"; // I
 const METACALL_OPCODES = ["CALL", "STATICCALL", "DELEGATECALL", "CALLCODE", "CREATE", "CREATE2"];
 
 export default function App() {
+  const [leftCollapsed, setLeftCollapsed] = useState(false); // Sidebar State
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
 
 
@@ -397,192 +398,225 @@ export default function App() {
       <main className="p-6">
         <div className="grid grid-cols-12 gap-6">
           {/* ===== LEFT COLUMN (3/12 on LG, 4/12 on MD) ===== */}
-          <div className="col-span-12 md:col-span-4 lg:col-span-3 space-y-4">
-            {/* Execution - Modern Panel */}
-            <ExecutionPanel
-              speed={speed}
-              onSpeedChange={setSpeed}
-              stepSize={stepSize}
-              onStepSizeChange={setStepSize}
-              onNext={() => next(stepSize)}
-              onPrev={() => prev(stepSize)}
-              isPlaying={isPlaying}
-              onTogglePlay={togglePlay}
-            />
+          <div className={cn(
+            "space-y-4 transition-all duration-300 relative",
+            leftCollapsed ? "hidden" : "col-span-12 md:col-span-4 lg:col-span-3"
+          )}>
+            {/* Collapse Toggle - Floating on the Right Edge */}
+            <button
+              type="button"
+              onClick={() => setLeftCollapsed(true)}
+              title="Collapse panels"
+              className="absolute z-20 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-brand-500 hover:border-brand-500 transition-all flex items-center justify-center shadow-sm -right-3 top-6"
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
 
-            {/* Filters */}
-            <InstructionFilters filters={filters} onChange={handleFiltersChange} />
+            <>
+              {/* Execution - Modern Panel */}
+              <ExecutionPanel
+                speed={speed}
+                onSpeedChange={setSpeed}
+                stepSize={stepSize}
+                onStepSizeChange={setStepSize}
+                onNext={() => next(stepSize)}
+                onPrev={() => prev(stepSize)}
+                isPlaying={isPlaying}
+                onTogglePlay={togglePlay}
+              />
+
+              {/* Filters */}
+              <InstructionFilters filters={filters} onChange={handleFiltersChange} />
 
 
-            {/* Breakpoints */}
-            <Card title="Breakpoints">
-              <div className="space-y-4">
+              {/* Breakpoints */}
+              <Card title="Breakpoints">
+                <div className="space-y-4">
 
-                {/* --- Active Breakpoints Display Area --- */}
-                {breakpoints.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2 p-2 bg-white dark:bg-gray-950 rounded-lg border border-gray-100 dark:border-gray-800">
-                    {breakpoints.map(bp => (
-                      <span key={bp.id} className={
-                        cn("inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border",
-                          bp.type === "Storage" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800" :
-                            bp.type === "Transient" ? "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800" :
-                              "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800"
-                        )
-                      }>
-                        <span className="font-bold">{bp.type.charAt(0)}</span>
-                        {bp.value.substring(0, 6)}...{bp.value.substring(bp.value.length - 4)}
-                        <button onClick={() => removeBreakpoint(bp.id)} className="hover:text-red-500 rounded-full p-0.5">
-                          {/* Petite croix SVG interne */}
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-                        </button>
-                      </span>
-                    ))}
+                  {/* --- Active Breakpoints Display Area --- */}
+                  {breakpoints.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2 p-2 bg-white dark:bg-gray-950 rounded-lg border border-gray-100 dark:border-gray-800">
+                      {breakpoints.map(bp => (
+                        <span key={bp.id} className={
+                          cn("inline-flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-mono border",
+                            bp.type === "Storage" ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800" :
+                              bp.type === "Transient" ? "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800" :
+                                "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800"
+                          )
+                        }>
+                          <span className="font-bold">{bp.type.charAt(0)}</span>
+                          {bp.value.substring(0, 6)}...{bp.value.substring(bp.value.length - 4)}
+                          <button onClick={() => removeBreakpoint(bp.id)} className="hover:text-red-500 rounded-full p-0.5">
+                            {/* Petite croix SVG interne */}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* --- Add Forms --- */}
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
+                    <p className="text-xs text-gray-500 mb-2">Storage (32 bytes hex)</p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="0x..."
+                        className="h-8 text-xs flex-1"
+                        value={storageInput}
+                        onChange={(e) => setStorageInput(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => addBreakpoint("Storage", storageInput, setStorageInput)}
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
-                )}
 
-                {/* --- Add Forms --- */}
-                <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
-                  <p className="text-xs text-gray-500 mb-2">Storage (32 bytes hex)</p>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="0x..."
-                      className="h-8 text-xs flex-1"
-                      value={storageInput}
-                      onChange={(e) => setStorageInput(e.target.value)}
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => addBreakpoint("Storage", storageInput, setStorageInput)}
-                    >
-                      +
-                    </Button>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
+                    <p className="text-xs text-gray-500 mb-2">Transient Storage</p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="0x..."
+                        className="h-8 text-xs flex-1"
+                        value={transientInput}
+                        onChange={(e) => setTransientInput(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => addBreakpoint("Transient", transientInput, setTransientInput)}
+                      >
+                        +
+                      </Button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
-                  <p className="text-xs text-gray-500 mb-2">Transient Storage</p>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="0x..."
-                      className="h-8 text-xs flex-1"
-                      value={transientInput}
-                      onChange={(e) => setTransientInput(e.target.value)}
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => addBreakpoint("Transient", transientInput, setTransientInput)}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
+                    <p className="text-xs text-gray-500 mb-2">Memory Range</p>
 
-                <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
-                  <p className="text-xs text-gray-500 mb-2">Memory Range</p>
+                    {/* Interface avancée style Memory Range avec +/- */}
+                    {/* Interface avancée style Memory Range avec +/- */}
+                    <div className="flex flex-col gap-2">
+                      {/* Enable Button - Full Width */}
+                      <Button
+                        size="sm"
+                        className={cn("w-full justify-center", memoryRangeEnabled
+                          ? "bg-blue-500 text-white border-blue-600 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                          : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
+                        )}
+                        onClick={toggleMemoryRange}
+                      >
+                        {memoryRangeEnabled ? "Range Enabled" : "Enable Range"}
+                      </Button>
 
-                  {/* Interface avancée style Memory Range avec +/- */}
-                  {/* Interface avancée style Memory Range avec +/- */}
-                  <div className="flex flex-col gap-2">
-                    {/* Enable Button - Full Width */}
-                    <Button
-                      size="sm"
-                      className={cn("w-full justify-center", memoryRangeEnabled
-                        ? "bg-blue-500 text-white border-blue-600 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
-                        : "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 dark:hover:bg-gray-700"
-                      )}
-                      onClick={toggleMemoryRange}
-                    >
-                      {memoryRangeEnabled ? "Range Enabled" : "Enable Range"}
-                    </Button>
-
-                    {/* Min / Max Row */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Min Stepper */}
-                      <div className="flex items-center justify-between rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-1">
-                        <button
-                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
-                          onClick={() => setMemoryMin(Math.max(0, memoryMin - 1))}
-                        >−</button>
-                        <div className="flex flex-col items-center leading-none">
-                          <span className="text-[10px] text-gray-400">min</span>
-                          <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{memoryMin}</span>
+                      {/* Min / Max Row */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Min Stepper */}
+                        <div className="flex items-center justify-between rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-1">
+                          <button
+                            className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
+                            onClick={() => setMemoryMin(Math.max(0, memoryMin - 1))}
+                          >−</button>
+                          <div className="flex flex-col items-center leading-none">
+                            <span className="text-[10px] text-gray-400">min</span>
+                            <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{memoryMin}</span>
+                          </div>
+                          <button
+                            className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
+                            onClick={() => setMemoryMin(memoryMin + 1)}
+                          >+</button>
                         </div>
-                        <button
-                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
-                          onClick={() => setMemoryMin(memoryMin + 1)}
-                        >+</button>
-                      </div>
 
-                      {/* Max Stepper */}
-                      <div className="flex items-center justify-between rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-1">
-                        <button
-                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
-                          onClick={() => setMemoryMax(Math.max(memoryMin + 1, memoryMax - 1))}
-                        >−</button>
-                        <div className="flex flex-col items-center leading-none">
-                          <span className="text-[10px] text-gray-400">max</span>
-                          <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{memoryMax}</span>
+                        {/* Max Stepper */}
+                        <div className="flex items-center justify-between rounded-md border border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-900 px-1">
+                          <button
+                            className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
+                            onClick={() => setMemoryMax(Math.max(memoryMin + 1, memoryMax - 1))}
+                          >−</button>
+                          <div className="flex flex-col items-center leading-none">
+                            <span className="text-[10px] text-gray-400">max</span>
+                            <span className="text-xs font-mono font-bold text-gray-700 dark:text-gray-200">{memoryMax}</span>
+                          </div>
+                          <button
+                            className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
+                            onClick={() => setMemoryMax(memoryMax + 1)}
+                          >+</button>
                         </div>
-                        <button
-                          className="p-1 px-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 font-mono"
-                          onClick={() => setMemoryMax(memoryMax + 1)}
-                        >+</button>
                       </div>
                     </div>
                   </div>
+                  {/* J'utilise flex-wrap pour que ça passe à la ligne si c'est trop serré */}
+                  <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Metacall</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={metacall}
+                          onChange={(e) => handleMetacallToggle(e.target.checked)}
+                        />
+
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Show Aliases</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={showAliases}
+                          onChange={(e) => setShowAliases(e.target.checked)}
+                        />
+
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">Skip called contract</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={skipContract}
+                          onChange={(e) => setSkipContract(e.target.checked)}
+                        />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-                {/* J'utilise flex-wrap pour que ça passe à la ligne si c'est trop serré */}
-                <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Metacall</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={metacall}
-                        onChange={(e) => handleMetacallToggle(e.target.checked)}
-                      />
-
-                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Show Aliases</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={showAliases}
-                        onChange={(e) => setShowAliases(e.target.checked)}
-                      />
-
-                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Skip called contract</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only peer"
-                        checked={skipContract}
-                        onChange={(e) => setSkipContract(e.target.checked)}
-                      />
-                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500 dark:peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
+              </Card>
+            </>
           </div>
 
+
           {/* ===== CENTER COLUMN (5/12 on LG, 8/12 on MD) ===== */}
-          <div className="col-span-12 md:col-span-8 lg:col-span-5 space-y-4">
+          <div className={cn(
+            "col-span-12 md:col-span-8 space-y-4 transition-all duration-300 relative",
+            leftCollapsed ? "lg:col-span-8" : "lg:col-span-5"
+          )}>
+            {/* Expand Button - Visible only when sidebar is collapsed */}
+            {leftCollapsed && (
+              <button
+                type="button"
+                onClick={() => setLeftCollapsed(false)}
+                title="Expand panels"
+                className="absolute z-20 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-brand-500 hover:border-brand-500 transition-all flex items-center justify-center shadow-sm -left-3 top-6"
+              >
+                <svg className="h-3.5 w-3.5 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+            )}
             {/* Opcodes - EN HAUT */}
             <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
               <ContractViewer
