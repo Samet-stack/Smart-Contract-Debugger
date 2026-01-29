@@ -110,8 +110,9 @@ export const useApollo = () => {
             opcode: log.next_instr.op,
             gas: Number(log.remaining_gas),
             gasCost: Number(log.next_instr.gas_cost),
-            stepNumber: stepIndex + 1, // 1-based display
-            totalSteps,
+            number: stepIndex + 1, // 1-based display
+            total: totalSteps,
+
             description: `Executed ${log.next_instr.op}`,
             memoryMappings,
             memoryChanges,
@@ -681,9 +682,10 @@ export const useApollo = () => {
             opcode: lastInstr.op,
             gas: Number(prevLogData.remaining_gas),
             gasCost: Number(lastInstr.gas_cost),
-            stepNumber: currentStepIndex, // The step that just ran
-            totalSteps: dynamicTotalSteps || state?.totalSteps || 0,
+            number: currentStepIndex, // The step that just ran
+            total: dynamicTotalSteps || state?.totalSteps || 0,
             description: `Executed ${lastInstr.op}`,
+
             depth: prevLogData.depth,
             address: prevLogData.address,
             callData: prevLogData.call_data?.value ? bufferToHex(prevLogData.call_data.value) : "",

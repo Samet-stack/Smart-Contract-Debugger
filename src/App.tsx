@@ -14,7 +14,9 @@ import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
 import type { Breakpoint } from "./types/ApolloAPI"; // Import Breakpoint
+import CallContextView from "./features/tx/CallContextView"; // Newly created
 import InstructionFilters from "./features/filters/InstructionFilters"; // Nouveau composant Feature
+
 
 import SettingsMenu, { type SettingsTab } from "./features/settings/SettingsMenu";
 import SettingsModals from "./features/settings/SettingsModals";
@@ -147,8 +149,9 @@ export default function App() {
     theirGas: parseInt(gasUsed.other) || 0,
     // LAST_RUN_INSTR: Uses lastInstruction (what just executed)
     lastRunInstr: lastInstruction ? {
-      number: lastInstruction.stepNumber,
-      total: lastInstruction.totalSteps,
+      number: lastInstruction.number,
+      total: lastInstruction.total,
+
       pc: lastInstruction.pc,
       opcode: lastInstruction.opcode,
       gas: lastInstruction.gas,
@@ -163,8 +166,9 @@ export default function App() {
     } : null,
     // NEXT_INSTR_TO_RUN: Uses nextInstruction (what's about to execute)
     nextInstrToRun: nextInstruction ? {
-      number: nextInstruction.stepNumber ?? 0,
-      total: nextInstruction.totalSteps ?? 0,
+      number: nextInstruction.number ?? 0,
+      total: nextInstruction.total ?? 0,
+
       pc: nextInstruction.pc,
       opcode: nextInstruction.opcode,
       gas: nextInstruction.gas,
@@ -618,7 +622,7 @@ export default function App() {
               </button>
             )}
             {/* Opcodes - EN HAUT */}
-            <Card title="Contract & OpCodes" className="h-[500px] flex flex-col">
+            <Card title="Contract & OpCodes" className="h-[350px] flex flex-col">
               <ContractViewer
                 code={contractCode}
                 currentPc={rawState?.currentInstruction?.pc}
@@ -628,8 +632,10 @@ export default function App() {
             </Card>
 
             <Card title="Instructions">
-              <TxInstrsView data={txInstrsData} showAliases={showAliases} />
+              <TxInstrsView data={txInstrsData} />
             </Card>
+
+
 
           </div>
 
@@ -702,7 +708,14 @@ export default function App() {
             <Card title="Storage">
               <StorageView items={storage} className="max-h-36" />
             </Card>
+
+            {/* Call Context (Moved from Center to Right) */}
+            <Card title="Current Call Context">
+              {/* Show context for the NEXT instruction to run (usually where we are stopped) */}
+              <CallContextView instr={rawState?.nextInstruction || null} showAliases={showAliases} />
+            </Card>
           </div>
+
         </div>
 
 

@@ -252,8 +252,9 @@ export const mapLogToState = (
         opcode: log.next_instr.op,
         gas: Number(log.remaining_gas),
         gasCost: Number(log.next_instr.gas_cost),
-        stepNumber: currentStep + 1, // 1-based index for display
-        totalSteps: effectiveTotalSteps,
+        number: currentStep + 1, // 1-based index for display
+        total: effectiveTotalSteps,
+
         description: `Executed ${log.next_instr.op}`,
         memoryMappings,
         memoryChanges,
@@ -262,7 +263,14 @@ export const mapLogToState = (
             pc: log.last_conditional_jump,
             opcode: "JUMPI",
             condition: ""
-        } : undefined
+        } : undefined,
+
+        // Add Context Data
+        address: log.address,
+        callData: log.call_data?.value ? bufferToHex(log.call_data.value) : "",
+        functionSelector: log.selector ? bufferToHex(log.selector) : "",
+        depth: log.depth
+
     };
 
     // Map Stack
@@ -342,8 +350,9 @@ export const mapLogToState = (
         currentStep,
         totalSteps,
         pcCoverage: 0,
-        currentInstruction: currentInstr,
-        nextInstruction: null,
+        currentInstruction: null,
+        nextInstruction: currentInstr,
+
         stack: mappedStack,
         memory: memorySegments,
         storage: storageItems,

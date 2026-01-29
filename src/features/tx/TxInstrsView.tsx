@@ -5,46 +5,33 @@
 
 import Badge from "../../ui-lib/components/Badge";
 import type { TxInstrs, InstructionInfo } from "../../types/TxInstrs";
-import { useAliases } from "../../context/AliasContext";
+
+
 
 interface TxInstrsViewProps {
     data: TxInstrs;
     className?: string;
-    showAliases?: boolean; // Control whether to show aliases
 }
 
 
-// Sous-composant pour une ligne label: valeur
-function InfoRow({ label, value, valueColor = "text-gray-700 dark:text-gray-200" }: { label: string; value: string | number; valueColor?: string }) {
-    return (
-        <div className="flex items-center gap-3 py-1">
-            <span className="text-gray-500 text-xs min-w-[100px]">{label}</span>
-            <span className={`font-mono text-sm ${valueColor}`}>{value}</span>
-        </div>
-    );
-}
 
-// Helper to format hex strings into chunks of 32 bytes (64 chars)
-function formatHexChunk(hex: string, chunkSize = 64) {
-    if (!hex) return "";
-    const regex = new RegExp(`.{1,${chunkSize}}`, 'g');
-    return hex.match(regex)?.join('\n') || hex;
-}
+
+
+
 
 // Sous-composant pour afficher une instruction (LAST_RUN ou NEXT)
 // Modifié pour enlever les bordures externes et s'intégrer dans la "Grande Case"
 interface InstructionBlockProps {
     title: string;
     instr: InstructionInfo | null;
-    showContext?: boolean;
     showMemoryChanges?: boolean;
-    showAliases?: boolean;
 }
 
 
-function InstructionBlock({ title, instr, showContext = true, showMemoryChanges = true, showAliases = true }: InstructionBlockProps) {
-    const { findAlias } = useAliases();
-    const alias = showAliases && instr?.address ? findAlias(instr.address) : undefined;
+function InstructionBlock({ title, instr, showMemoryChanges = true }: InstructionBlockProps) {
+
+
+
 
 
     if (!instr) {
@@ -82,45 +69,37 @@ function InstructionBlock({ title, instr, showContext = true, showMemoryChanges 
                 )}
 
                 {/* Grid des infos - Always render even if unknown */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                    <InfoRow label="pc:" value={instr.pc} />
-                    {instr.gas !== undefined && <InfoRow label="gas:" value={instr.gas.toLocaleString()} />}
-                    {instr.gasCost !== undefined && <InfoRow label="gasCost:" value={instr.gasCost} />}
-                    {instr.depth !== undefined && <InfoRow label="depth:" value={instr.depth} />}
+                {/* Grid des infos - Colored Badges in one line */}
+                <div className="flex flex-wrap gap-2 text-xs font-mono">
+                    <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded">
+                        <span className="text-blue-500 dark:text-blue-400 font-bold">PC</span>
+                        <span className="text-blue-700 dark:text-blue-300">{instr.pc}</span>
+                    </div>
+
+                    {instr.gas !== undefined && (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded">
+                            <span className="text-green-500 dark:text-green-400 font-bold">GAS</span>
+                            <span className="text-green-700 dark:text-green-300">{instr.gas.toLocaleString()}</span>
+                        </div>
+                    )}
+
+                    {instr.gasCost !== undefined && (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded">
+                            <span className="text-orange-500 dark:text-orange-400 font-bold">COST</span>
+                            <span className="text-orange-700 dark:text-orange-300">{instr.gasCost}</span>
+                        </div>
+                    )}
+
+                    {instr.depth !== undefined && (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 rounded">
+                            <span className="text-purple-500 dark:text-purple-400 font-bold">DEPTH</span>
+                            <span className="text-purple-700 dark:text-purple-300">{instr.depth}</span>
+                        </div>
+                    )}
                 </div>
 
-                {instr.address && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <span className="text-gray-500 text-xs">@:</span>
-                        {alias?.label && (
-                            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mt-1">
-                                {alias.label}
-                            </p>
-                        )}
-                        <p className="font-mono text-xs text-gray-700 dark:text-gray-300 mt-1 break-all">
-                            {instr.address}
-                        </p>
-                    </div>
-                )}
 
-                {/* Function selector & Call data - Conditional */}
-                {showContext && (
-                    <>
-                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                            <span className="text-gray-500 text-xs">Function selector:</span>
-                            <p className="font-mono text-xs text-cyan-400 mt-1 h-4">
-                                {instr.functionSelector || <span className="text-gray-400 italic">0x...</span>}
-                            </p>
-                        </div>
 
-                        <div className="mt-3">
-                            <span className="text-gray-500 text-xs">Call data:</span>
-                            <pre className="font-mono text-[10px] text-gray-700 dark:text-gray-300 leading-relaxed mt-1 whitespace-pre-wrap min-h-[1.5em]">
-                                {instr.callData ? formatHexChunk(instr.callData) : <span className="text-gray-400 italic">Empty</span>}
-                            </pre>
-                        </div>
-                    </>
-                )}
             </div>
 
             {/* Memory Changes - Conditional */}
@@ -161,7 +140,8 @@ function InstructionBlock({ title, instr, showContext = true, showMemoryChanges 
     );
 }
 
-export default function TxInstrsView({ data, className = "", showAliases = true }: TxInstrsViewProps) {
+export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps) {
+
     return (
         <div className={`${className} space-y-6`}>
             {/* Header avec Gas - Intégré en haut du contenu */}
@@ -182,12 +162,23 @@ export default function TxInstrsView({ data, className = "", showAliases = true 
             {/* Separator discret sous le header gas */}
             {/* <div className="border-t border-gray-100 dark:border-gray-800" /> */}
 
-            <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} showContext={true} showMemoryChanges={true} showAliases={showAliases} />
+            {/* 2-Column Layout for Last and Next Instructions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+                {/* Column 1: Last Run */}
+                <div>
+                    <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} showMemoryChanges={true} />
+                </div>
 
-            {/* Separator entre Last et Next */}
-            <div className="border-t border-gray-100 dark:border-gray-800" />
+                {/* Vertical Separator for large screens */}
+                <div className="hidden md:block absolute left-1/2 top-4 bottom-4 w-px bg-gray-100 dark:bg-gray-800 -translate-x-1/2" />
 
-            <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} showContext={true} showMemoryChanges={true} showAliases={showAliases} />
+                {/* Column 2: Next */}
+                <div>
+                    <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} showMemoryChanges={true} />
+                </div>
+            </div>
+
+
         </div>
     );
 }

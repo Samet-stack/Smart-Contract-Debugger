@@ -35,9 +35,10 @@ export interface InstructionInfo {
     opcode: string;
     gas: number;
     gasCost: number;
-    stepNumber: number;
-    totalSteps: number;
+    number: number;
+    total: number;
     description?: string;
+
     callData?: string;
     functionSelector?: string;
     address?: string;
