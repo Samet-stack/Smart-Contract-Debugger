@@ -650,7 +650,7 @@ export default function App() {
               >
                 <ContractViewer
                   code={contractCode}
-                  currentPc={rawState?.currentInstruction?.pc}
+                  currentPc={rawState?.nextInstruction?.pc}
                   isExternalContract={isExternalContract}
                   externalAddress={address}
                 />
