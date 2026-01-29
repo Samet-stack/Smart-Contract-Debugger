@@ -33,6 +33,8 @@ import TransientStorageView from "./features/storage/TransientStorageView"; // I
 // CALL-type opcodes for Metacall breakpoint
 const METACALL_OPCODES = ["CALL", "STATICCALL", "DELEGATECALL", "CALLCODE", "CREATE", "CREATE2"];
 
+import LOGO_IMG from "./assets/logo.png";
+
 export default function App() {
   const [leftCollapsed, setLeftCollapsed] = useState(false); // Sidebar State
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
@@ -312,9 +314,7 @@ export default function App() {
 
           {/* 1. Logo section (using order-1 to keep it left) */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 order-1">
-            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-brand/20 shadow-lg">
-              <span className="text-lg md:text-xl font-bold text-white">A</span>
-            </div>
+            <img src={LOGO_IMG} alt="Apollo Logo" className="h-16 w-16 md:h-20 md:w-20 object-contain" />
             <div>
               <span className="font-bold text-gray-900 dark:text-white tracking-tight text-sm md:text-base">Apollo</span>
               {/* Caché sur mobile pour éviter que ça fasse trop compréssé */}
@@ -666,6 +666,16 @@ export default function App() {
               <TxInstrsView data={txInstrsData} />
             </Card>
 
+            {/* Call Context (Moved from Right to Center) */}
+            <Card title="Current Call Context">
+              {/* Show context for BOTH last and next instructions, to mirror the instructions view */}
+              <CallContextView
+                lastInstr={txInstrsData.lastRunInstr}
+                nextInstr={txInstrsData.nextInstrToRun}
+                showAliases={showAliases}
+              />
+            </Card>
+
 
 
           </div>
@@ -739,7 +749,6 @@ export default function App() {
             <Card title="Storage">
               <StorageView items={storage} className="max-h-36" />
             </Card>
-
           </div>
 
         </div>

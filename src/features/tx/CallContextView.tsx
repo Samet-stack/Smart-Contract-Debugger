@@ -1,71 +1,112 @@
-// CallContextView.tsx
-// Displays the current execution context (Address, Selector, CallData)
-// Extracted from TxInstrsView to be displayed in the right column
-
+import { useState } from "react";
 import { useAliases } from "../../context/AliasContext";
 import type { InstructionInfo } from "../../types/TxInstrs";
 import Badge from "../../ui-lib/components/Badge";
 
 interface CallContextViewProps {
-    instr: InstructionInfo | null;
+    lastInstr: InstructionInfo | null;
+    nextInstr: InstructionInfo | null;
     showAliases?: boolean;
 }
 
-// Helper to format hex strings into chunks of 32 bytes (64 chars)
-function formatHexChunk(hex: string, chunkSize = 64) {
-    if (!hex) return "";
-    const regex = new RegExp(`.{1,${chunkSize}}`, 'g');
-    return hex.match(regex)?.join('\n') || hex;
-}
-
-export default function CallContextView({ instr, showAliases = true }: CallContextViewProps) {
+// Helper to display a single context block
+function ContextBlock({ instr, showAliases }: { instr: InstructionInfo | null, showAliases: boolean }) {
     const { findAlias } = useAliases();
+    const [isExpanded, setIsExpanded] = useState(false);
 
-    // If no instruction or no address context, show placeholder or empty
     if (!instr || !instr.address) {
         return (
-            <div className="p-4 text-center text-gray-400 italic text-xs">
-                No active call context
+            <div className="flex items-center justify-center h-full min-h-[60px] text-gray-400 italic text-[10px]">
+                No context
             </div>
         );
     }
 
     const alias = showAliases ? findAlias(instr.address) : undefined;
+    const callDataSize = instr.callData ? (instr.callData.length - 2) / 2 : 0;
+    const hasCallData = callDataSize > 0;
 
     return (
-        <div className="p-4 space-y-4">
-            {/* Address Section */}
-            <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide font-semibold">Contract Address</span>
-                {alias?.label && (
-                    <div className="flex items-center gap-2 mt-1">
-                        <Badge color="primary" variant="light" size="sm">{alias.label}</Badge>
+        <div className="space-y-2">
+            {/* Badges Container */}
+            <div className="flex flex-wrap gap-2 items-center">
+
+                {/* Contract Address Badge */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 dark:bg-gray-800/50 rounded border border-gray-100 dark:border-gray-700 min-w-0 max-w-full flex-1">
+                    <span className="text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400 flex-shrink-0">Contract</span>
+                    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden text-[9px]">
+                        {alias?.label && (
+                            <Badge color="primary" variant="light" size="sm" className="px-1 py-0 text-[8px] h-3 leading-none flex-shrink-0">{alias.label}</Badge>
+                        )}
+                        <span className="font-mono text-gray-800 dark:text-gray-200 truncate" title={instr.address}>
+                            {instr.address}
+                        </span>
                     </div>
-                )}
-                <p className="font-mono text-xs text-gray-800 dark:text-gray-200 mt-1 break-all bg-gray-50 dark:bg-gray-800/50 p-1.5 rounded border border-gray-100 dark:border-gray-700">
-                    {instr.address}
-                </p>
+                </div>
             </div>
 
-            {/* Function Selector */}
-            <div>
-                <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide font-semibold">Function Selector</span>
-                <p className="font-mono text-xs text-cyan-600 dark:text-cyan-400 mt-1 break-all bg-cyan-50 dark:bg-cyan-900/10 p-1.5 rounded border border-cyan-100 dark:border-cyan-800/30">
-                    {instr.functionSelector || <span className="text-gray-400 italic">0x...</span>}
-                </p>
+            <div className="flex flex-wrap gap-2 items-center">
+                {/* Function Selector Badge */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-cyan-50 dark:bg-cyan-900/10 rounded border border-cyan-100 dark:border-cyan-800/30 flex-1 min-w-0">
+                    <span className="text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400 flex-shrink-0">Selector</span>
+                    <span className="font-mono text-[9px] text-cyan-600 dark:text-cyan-400 truncate">
+                        {instr.functionSelector || <span className="text-gray-400 italic">0x...</span>}
+                    </span>
+                </div>
             </div>
 
             {/* Call Data */}
-            <div>
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide font-semibold">Call Data</span>
-                    <span className="text-[10px] text-gray-400 font-mono">
-                        {instr.callData ? `${(instr.callData.length - 2) / 2} bytes` : '0 bytes'}
-                    </span>
+            <div className="w-full">
+                <button
+                    onClick={() => hasCallData && setIsExpanded(!isExpanded)}
+                    disabled={!hasCallData}
+                    className={`w-full flex items-center justify-between group rounded px-2 py-1 transition-colors border border-gray-100 dark:border-gray-800 ${hasCallData ? 'bg-gray-50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer' : 'opacity-50 cursor-default'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400">Call Data</span>
+                        <span className="text-[9px] text-gray-400 font-mono">
+                            {callDataSize} bytes
+                        </span>
+                    </div>
+
+                    {hasCallData && (
+                        <svg
+                            className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    )}
+                </button>
+
+                {isExpanded && hasCallData && (
+                    <div className="mt-1">
+                        <pre className="font-mono text-[9px] text-gray-700 dark:text-gray-300 leading-tight bg-gray-50 dark:bg-gray-800/50 p-1.5 rounded border border-gray-100 dark:border-gray-700 whitespace-pre-wrap max-h-[150px] overflow-y-auto break-all scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700">
+                            {instr.callData}
+                        </pre>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export default function CallContextView({ lastInstr, nextInstr, showAliases = true }: CallContextViewProps) {
+    return (
+        <div className="p-2 relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Left Column: Last Instruction Context */}
+                <div className="min-w-0">
+                    <ContextBlock instr={lastInstr} showAliases={showAliases} />
                 </div>
-                <pre className="font-mono text-[10px] text-gray-700 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-2 rounded border border-gray-100 dark:border-gray-700 whitespace-pre-wrap max-h-[300px] overflow-y-auto">
-                    {instr.callData ? formatHexChunk(instr.callData) : <span className="text-gray-400 italic">Empty</span>}
-                </pre>
+
+                {/* Vertical Separator (Hidden on mobile) */}
+                <div className="hidden md:block absolute left-1/2 top-2 bottom-2 w-px bg-gray-100 dark:bg-gray-800 -translate-x-1/2" />
+
+                {/* Right Column: Next Instruction Context */}
+                <div className="min-w-0">
+                    <ContextBlock instr={nextInstr} showAliases={showAliases} />
+                </div>
             </div>
         </div>
     );
