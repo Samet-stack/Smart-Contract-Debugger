@@ -80,21 +80,21 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                             key={index}
                             ref={isCurrentPc ? activeRef : null}
                             className={cn(
-                                "flex items-center gap-3 px-2 py-0.5 rounded transition-colors duration-200",
+                                "flex items-center gap-3 px-2 py-1 rounded transition-colors duration-150",
                                 isCurrentPc
-                                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/50 dark:text-blue-100 font-bold border-l-2 border-blue-500 shadow-sm"
-                                    : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 opacity-80 hover:opacity-100"
+                                    ? "bg-green-300 dark:bg-green-600/70 text-green-950 dark:text-green-50 font-semibold shadow-md"
+                                    : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
                             )}
                         >
                             <span className={cn(
-                                "w-10 text-right opacity-60 font-mono text-[10px]",
-                                isCurrentPc && "opacity-100 font-bold"
+                                "w-10 text-right font-mono text-[10px]",
+                                isCurrentPc ? "text-green-800 dark:text-green-100 font-bold" : "opacity-60"
                             )}>
                                 {op.pc}
                             </span>
                             <span className={cn(
                                 "font-mono font-medium",
-                                isCurrentPc ? "text-blue-700 dark:text-blue-200" : "text-purple-600 dark:text-purple-400"
+                                isCurrentPc ? "text-green-900 dark:text-green-50" : "text-purple-600 dark:text-purple-400"
                             )}>
                                 {op.op}
                             </span>

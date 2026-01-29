@@ -41,6 +41,12 @@ const RewindIcon = () => (
     </svg>
 );
 
+const StopIcon = () => (
+    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <rect x="4" y="4" width="12" height="12" rx="1" />
+    </svg>
+);
+
 export default function ExecutionPanel({
     speed,
     onSpeedChange,
@@ -80,16 +86,16 @@ export default function ExecutionPanel({
 
                     {/* Left Group: Backwards */}
                     <div className="inline-flex rounded-lg shadow-sm isolate">
-                        <Tooltip content={isPlaying === 'backward' ? "Stop Auto-Previous" : "Auto-Previous"}>
+                        <Tooltip content={isPlaying === 'backward' ? "Stop" : "Auto-Previous"}>
                             <button
                                 className={`relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-l-lg border transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
                                     ${isPlaying === 'backward'
-                                        ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-600 focus:ring-orange-500/50 shadow-md z-10'
+                                        ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
                                         : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
                                     }`}
                                 onClick={() => onTogglePlay('backward')}
                             >
-                                <RewindIcon />
+                                {isPlaying === 'backward' ? <StopIcon /> : <RewindIcon />}
                             </button>
                         </Tooltip>
                         <Tooltip content="Previous Instruction">
@@ -112,16 +118,16 @@ export default function ExecutionPanel({
                                 <ChevronRightIcon />
                             </button>
                         </Tooltip>
-                        <Tooltip content={isPlaying === 'forward' ? "Stop Auto-Next" : "Auto-Next"}>
+                        <Tooltip content={isPlaying === 'forward' ? "Stop" : "Auto-Next"}>
                             <button
                                 className={`relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px border rounded-r-lg transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
                                     ${isPlaying === 'forward'
-                                        ? 'bg-green-500 text-white border-green-600 hover:bg-green-600 focus:ring-green-500/50 shadow-md z-10'
+                                        ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
                                         : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
                                     }`}
                                 onClick={() => onTogglePlay('forward')}
                             >
-                                <FastForwardIcon />
+                                {isPlaying === 'forward' ? <StopIcon /> : <FastForwardIcon />}
                             </button>
                         </Tooltip>
                     </div>
