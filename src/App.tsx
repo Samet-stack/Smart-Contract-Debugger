@@ -308,7 +308,8 @@ export default function App() {
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
       {/* ========== HEADER ========== */}
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 shadow-sm">
-        <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-3 gap-x-2 px-4 py-3 md:px-6">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-y-3 gap-x-2 px-4 py-3 md:px-6">
+
 
           {/* 1. Logo section (using order-1 to keep it left) */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 order-1">
@@ -324,7 +325,10 @@ export default function App() {
 
           {/* 2. Search bar, prominent (with order-2 and flex-1 it adapts) */}
           {/* on la garde au milieu, sur mobile comme sur ordi */}
-          <div className="flex-1 min-w-0 order-2 md:flex-none md:w-auto md:flex-1 mx-1 md:mx-2 max-w-xl">
+          <div className="flex-1 order-2 mx-2 md:mx-6 max-w-3xl min-w-0">
+
+
+
             <Input
               placeholder="Tx hash..."
               className="w-full h-9 md:h-10 text-xs md:text-sm bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-brand-500/20 transition-all rounded-xl"
@@ -355,7 +359,9 @@ export default function App() {
 
           {/* 4. Action buttons (scrollable on mobile) */}
           {/* Sur mobile on les mets en bas (order-4), sur ordi on les remonte au milieu (order-3) */}
-          <div className="order-4 md:order-3 w-full md:w-auto md:flex-1 flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
+          <div className="order-4 md:order-3 w-full md:w-auto md:flex-none flex-shrink-0 md:ml-auto flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
+
+
             {/* Console Trigger */}
             <button
               onClick={() => setIsConsoleOpen(true)}
