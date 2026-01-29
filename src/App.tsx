@@ -609,6 +609,7 @@ export default function App() {
             leftCollapsed ? "lg:col-span-8" : "lg:col-span-5"
           )}>
             {/* Expand Button - Visible only when sidebar is collapsed */}
+            {/* Expand Button - Visible only when sidebar is collapsed */}
             {leftCollapsed && (
               <button
                 type="button"
@@ -621,15 +622,40 @@ export default function App() {
                 </svg>
               </button>
             )}
-            {/* Opcodes - EN HAUT */}
-            <Card title="Contract & OpCodes" className="h-[350px] flex flex-col">
-              <ContractViewer
-                code={contractCode}
-                currentPc={rawState?.currentInstruction?.pc}
-                isExternalContract={isExternalContract}
-                externalAddress={address}
-              />
-            </Card>
+
+            {/* Side-by-Side Grid when collapsed: Execution Left | OpCodes Right */}
+            <div className={cn(
+              leftCollapsed ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : "flex flex-col gap-4"
+            )}>
+              {leftCollapsed && (
+                // Execution Panel (Left Cell in Grid)
+                <div className="flex flex-col justify-center">
+                  <ExecutionPanel
+                    speed={speed}
+                    onSpeedChange={setSpeed}
+                    stepSize={stepSize}
+                    onStepSizeChange={setStepSize}
+                    onNext={() => next(stepSize)}
+                    onPrev={() => prev(stepSize)}
+                    isPlaying={isPlaying}
+                    onTogglePlay={togglePlay}
+                  />
+                </div>
+              )}
+
+              {/* OpCodes (Right Cell in Grid, or Full Width if not collapsed) */}
+              <Card
+                title="Contract & OpCodes"
+                className="h-[350px] flex flex-col"
+              >
+                <ContractViewer
+                  code={contractCode}
+                  currentPc={rawState?.currentInstruction?.pc}
+                  isExternalContract={isExternalContract}
+                  externalAddress={address}
+                />
+              </Card>
+            </div>
 
             <Card title="Instructions">
               <TxInstrsView data={txInstrsData} />

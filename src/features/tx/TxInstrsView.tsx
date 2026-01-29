@@ -102,37 +102,33 @@ function InstructionBlock({ title, instr, showMemoryChanges = true }: Instructio
 
             </div>
 
-            {/* Memory Changes - Conditional */}
-            {showMemoryChanges && (
+            {/* Memory Changes - Only show if there are actual changes */}
+            {showMemoryChanges && instr.memoryChanges && instr.memoryChanges.length > 0 && (
                 <div className="mt-4 px-1">
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Memory Changes</p>
-
-                    {instr.memoryChanges && instr.memoryChanges.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                            {instr.memoryChanges.map((mc, i) => (
-                                <Badge key={i} color="warning" variant="light">
-                                    Offset: {mc.offset} | Size: {mc.size}
-                                </Badge>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="px-2 py-1 text-xs text-gray-400 italic bg-gray-50 dark:bg-gray-900/30 rounded border border-gray-100 dark:border-gray-800 inline-block">
-                            No changes
-                        </div>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                        {instr.memoryChanges.map((mc, i) => (
+                            <Badge key={i} color="warning" variant="light">
+                                Offset: {mc.offset} | Size: {mc.size}
+                            </Badge>
+                        ))}
+                    </div>
                 </div>
             )}
 
-            {/* Last Conditional Jump - Always show if present, or maybe control via prop too? 
-                Let's keep it separate for now as it's specific data */}
-            {instr.lastConditionalJump && (
+            {/* Last Conditional Jump - Only show if present with valid PC */}
+            {instr.lastConditionalJump && instr.lastConditionalJump.pc !== undefined && (
                 <div className="mt-4 px-1">
                     <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Last Conditional Jump</p>
                     <div className="flex items-center gap-2 text-xs font-mono">
                         <Badge color="error" variant="light">JUMPI</Badge>
                         <span className="text-gray-600 dark:text-gray-400">PC = {instr.lastConditionalJump.pc}</span>
-                        <span className="text-gray-500">|</span>
-                        <span className="text-gray-600 dark:text-gray-400">Condition = {instr.lastConditionalJump.condition}</span>
+                        {instr.lastConditionalJump.condition && (
+                            <>
+                                <span className="text-gray-500">|</span>
+                                <span className="text-gray-600 dark:text-gray-400">Condition = {instr.lastConditionalJump.condition}</span>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
