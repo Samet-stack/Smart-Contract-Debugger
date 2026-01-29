@@ -14,7 +14,6 @@ import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
 import type { Breakpoint } from "./types/ApolloAPI"; // Import Breakpoint
-import CallContextView from "./features/tx/CallContextView"; // Newly created
 import InstructionFilters from "./features/filters/InstructionFilters"; // Nouveau composant Feature
 
 
@@ -741,11 +740,6 @@ export default function App() {
               <StorageView items={storage} className="max-h-36" />
             </Card>
 
-            {/* Call Context (Moved from Center to Right) */}
-            <Card title="Current Call Context">
-              {/* Show context for the NEXT instruction to run (usually where we are stopped) */}
-              <CallContextView instr={rawState?.nextInstruction || null} showAliases={showAliases} />
-            </Card>
           </div>
 
         </div>
