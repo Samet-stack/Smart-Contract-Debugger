@@ -27,23 +27,47 @@ interface InstructionBlockProps {
     showMemoryChanges?: boolean;
 }
 
+// Helper to format hex strings into chunks (64 chars = 32 bytes)
+function formatHexChunk(hex: string, chunkSize = 64) {
+    if (!hex) return "";
+    const raw = hex.startsWith("0x") ? hex.slice(2) : hex;
+    const regex = new RegExp(`.{1,${chunkSize}}`, "g");
+    const chunks = raw.match(regex) || [];
+    return chunks.map(chunk => `0x${chunk}`).join("\n");
+}
+
+interface CallDataBlockProps {
+    title: string;
+    selector?: string;
+    callData?: string;
+}
+
+function CallDataBlock({ title, selector, callData }: CallDataBlockProps) {
+    if (!selector && !callData) return null;
+    return (
+        <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-3 border border-gray-200 dark:border-gray-800 space-y-3">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">{title}</p>
+            {selector && (
+                <div>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Function selector</span>
+                    <p className="font-mono text-xs text-cyan-500 mt-1 break-all">{selector}</p>
+                </div>
+            )}
+            {callData && (
+                <div>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wide">Call data</span>
+                    <pre className="font-mono text-[10px] text-gray-700 dark:text-gray-300 leading-relaxed mt-1 whitespace-pre-wrap">
+                        {formatHexChunk(callData)}
+                    </pre>
+                </div>
+            )}
+        </div>
+    );
+}
+
 
 function InstructionBlock({ title, instr, showMemoryChanges = true }: InstructionBlockProps) {
-
-
-
-
-
-    if (!instr) {
-        return (
-            <div>
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{title}</h4>
-                <div className="rounded-lg bg-gray-50 dark:bg-gray-900/50 p-4 border border-dashed border-gray-200 dark:border-gray-800">
-                    <p className="text-gray-500 italic text-sm text-center">None</p>
-                </div>
-            </div>
-        );
-    }
+    if (!instr) return null;
 
     // Check if fallback instruction
     const isUnknown = instr.opcode === "UNKNOWN";
@@ -137,6 +161,13 @@ function InstructionBlock({ title, instr, showMemoryChanges = true }: Instructio
 }
 
 export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps) {
+    const hasLast = Boolean(data.lastRunInstr);
+    const hasNext = Boolean(data.nextInstrToRun);
+
+    if (!hasLast && !hasNext) return null;
+
+    const callInstr = data.nextInstrToRun ?? data.lastRunInstr;
+    const hasCallSection = Boolean(callInstr?.callData || callInstr?.functionSelector);
 
     return (
         <div className={`${className} space-y-6`}>
@@ -159,23 +190,39 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
             {/* <div className="border-t border-gray-100 dark:border-gray-800" /> */}
 
             {/* 2-Column Layout for Last and Next Instructions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+            <div className={`grid grid-cols-1 ${hasLast && hasNext ? "md:grid-cols-2" : "md:grid-cols-1"} gap-4 relative`}>
                 {/* Column 1: Last Run */}
-                <div>
-                    <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} showMemoryChanges={true} />
-                </div>
+                {hasLast && (
+                    <div>
+                        <InstructionBlock title="Last Run Instruction" instr={data.lastRunInstr} showMemoryChanges={true} />
+                    </div>
+                )}
 
                 {/* Vertical Separator for large screens */}
-                <div className="hidden md:block absolute left-1/2 top-4 bottom-4 w-px bg-gray-100 dark:bg-gray-800 -translate-x-1/2" />
+                {hasLast && hasNext && (
+                    <div className="hidden md:block absolute left-1/2 top-4 bottom-4 w-px bg-gray-100 dark:bg-gray-800 -translate-x-1/2" />
+                )}
 
                 {/* Column 2: Next */}
-                <div>
-                    <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} showMemoryChanges={true} />
-                </div>
+                {hasNext && (
+                    <div>
+                        <InstructionBlock title="Next Instruction" instr={data.nextInstrToRun} showMemoryChanges={true} />
+                    </div>
+                )}
             </div>
+
+            {hasCallSection && (
+                <div className="space-y-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Call Data</p>
+                    <CallDataBlock
+                        title={data.nextInstrToRun ? "Current" : "Last Run"}
+                        selector={callInstr?.functionSelector}
+                        callData={callInstr?.callData}
+                    />
+                </div>
+            )}
 
 
         </div>
     );
 }
-

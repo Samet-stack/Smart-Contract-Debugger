@@ -10,6 +10,7 @@ import ExecutionPanel from "./features/execution/ExecutionPanel";
 import MemoryView from "./features/memory/MemoryView";
 import StackView from "./features/stack/StackView";
 import TxInstrsView from "./features/tx/TxInstrsView";
+import CallContextView from "./features/tx/CallContextView";
 import type { MemorySegment } from "./types/MemorySegment";
 import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
