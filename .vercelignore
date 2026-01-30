@@ -1,0 +1,5 @@
+.git
+.ds_store
+node_modules
+dist
+src/test
