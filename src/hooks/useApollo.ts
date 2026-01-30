@@ -256,7 +256,7 @@ export const useApollo = () => {
 
 
             const config = {
-                node_url: "/reth",
+                node_url: "https://app.functori.com/reth",
                 tx_hash: hash
             };
 
