@@ -630,24 +630,8 @@ export default function App() {
             )}
 
             {/* Side-by-Side Grid when collapsed: Execution Left | OpCodes Right */}
-            <div className={cn(
-              leftCollapsed ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : "flex flex-col gap-4"
-            )}>
-              {leftCollapsed && (
-                // Execution Panel (Left Cell in Grid)
-                <div className="flex flex-col justify-center">
-                  <ExecutionPanel
-                    speed={speed}
-                    onSpeedChange={setSpeed}
-                    stepSize={stepSize}
-                    onStepSizeChange={setStepSize}
-                    onNext={() => next(stepSize)}
-                    onPrev={() => prev(stepSize)}
-                    isPlaying={isPlaying}
-                    onTogglePlay={togglePlay}
-                  />
-                </div>
-              )}
+            <div className="flex flex-col gap-4">
+
 
               {/* OpCodes (Right Cell in Grid, or Full Width if not collapsed) */}
               <Card
@@ -663,7 +647,68 @@ export default function App() {
               </Card>
             </div>
 
-            <Card title="Instructions">
+            <Card
+              title="Instructions"
+              className="relative"
+              headerEnd={
+                leftCollapsed && (
+                  <div className="flex items-center gap-2">
+                    {/* Left Group: Backwards */}
+                    <div className="inline-flex rounded-lg shadow-sm isolate">
+                      <button
+                        className={`relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-l-lg border transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
+                                ${isPlaying === 'backward'
+                            ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+                          }`}
+                        onClick={() => togglePlay('backward')}
+                        title={isPlaying === 'backward' ? "Stop" : "Auto-Previous (P)"}
+                      >
+                        {/* Icons inline to avoid extra component imports */}
+                        {isPlaying === 'backward' ? (
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="12" rx="1" /></svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" /></svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => prev(stepSize)}
+                        title="Previous Instruction"
+                        className="relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px text-slate-500 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                    </div>
+
+                    {/* Right Group: Forwards */}
+                    <div className="inline-flex rounded-lg shadow-sm isolate">
+                      <button
+                        onClick={() => next(stepSize)}
+                        title="Next Instruction"
+                        className="relative inline-flex items-center justify-center px-2.5 py-1.5 text-slate-500 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                      <button
+                        className={`relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px border rounded-r-lg transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
+                                ${isPlaying === 'forward'
+                            ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
+                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+                          }`}
+                        onClick={() => togglePlay('forward')}
+                        title={isPlaying === 'forward' ? "Stop" : "Auto-Next (N)"}
+                      >
+                        {isPlaying === 'forward' ? (
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="12" rx="1" /></svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z" /></svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+            >
               <TxInstrsView data={txInstrsData} />
             </Card>
 

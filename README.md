@@ -19,3 +19,5 @@ Le build est disponible dans le dossier `dist/`.
 ```bash
 make run-local
 ```
+
+Ouvre ensuite http://localhost:5173/ dans ton navigateur.
