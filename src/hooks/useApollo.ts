@@ -256,7 +256,7 @@ export const useApollo = () => {
 
 
             const config = {
-                node_url: "/reth",
+                node_url: "https://app.functori.com/reth",
                 tx_hash: hash
             };
 
@@ -479,102 +479,102 @@ export const useApollo = () => {
         isProcessingRef.current = true;
         try {
 
-        const isForward = direction === 'forward';
-        const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
+            const isForward = direction === 'forward';
+            const steps = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
 
-        let moved = 0;
-        let log: log_infos | null = null;
-        let lastValidLog: log_infos | null = null;
-        let movedToLastValid = 0;
-        let hitBreakpoint = false;
+            let moved = 0;
+            let log: log_infos | null = null;
+            let lastValidLog: log_infos | null = null;
+            let movedToLastValid = 0;
+            let hitBreakpoint = false;
 
-        const isFiltering = filters.length > 0;
-        let validStepsFound = 0;
-        let totalScanned = 0;
-        const SCAN_LIMIT = 10_000_000;
-        const CHUNK_SIZE = 500; // Drastically reduced from 5000 to keep UI responsive
-        const startingDepth = currentLogRef.current?.depth ?? 0;
-
-
-
-        // Iterator methods based on direction
-        const advance = () => isForward ? iterator.next() : iterator.prev();
-        const rewind = () => isForward ? iterator.prev() : iterator.next();
-
-        while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
-            // Yield to event loop periodically
-            if (totalScanned > 0 && totalScanned % CHUNK_SIZE === 0) {
-                await new Promise(resolve => setTimeout(resolve, 0));
-            }
-
-            if (!advance()) break; // End of trace
+            const isFiltering = filters.length > 0;
+            let validStepsFound = 0;
+            let totalScanned = 0;
+            const SCAN_LIMIT = 10_000_000;
+            const CHUNK_SIZE = 500; // Drastically reduced from 5000 to keep UI responsive
+            const startingDepth = currentLogRef.current?.depth ?? 0;
 
 
-            log = iterator.current_log() ?? null;
-            if (!log) break;
+
+            // Iterator methods based on direction
+            const advance = () => isForward ? iterator.next() : iterator.prev();
+            const rewind = () => isForward ? iterator.prev() : iterator.next();
+
+            while (validStepsFound < steps && totalScanned < SCAN_LIMIT) {
+                // Yield to event loop periodically
+                if (totalScanned > 0 && totalScanned % CHUNK_SIZE === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+
+                if (!advance()) break; // End of trace
 
 
-            totalScanned++;
-            moved++;
+                log = iterator.current_log() ?? null;
+                if (!log) break;
 
-            // Skip contract check: ignore instructions deeper than starting depth
-            if (skipContract && log.depth > startingDepth) {
-                continue;
-            }
 
-            // Check breakpoints (always interrupt)
-            if (shouldStop(log)) {
-                hitBreakpoint = true;
-                validStepsFound++;
-                lastValidLog = log;
-                movedToLastValid = moved;
-                break;
-            }
+                totalScanned++;
+                moved++;
 
-            // Check filter
-            if (isFiltering) {
-                if (matchesFilter(log)) {
+                // Skip contract check: ignore instructions deeper than starting depth
+                if (skipContract && log.depth > startingDepth) {
+                    continue;
+                }
+
+                // Check breakpoints (always interrupt)
+                if (shouldStop(log)) {
+                    hitBreakpoint = true;
+                    validStepsFound++;
+                    lastValidLog = log;
+                    movedToLastValid = moved;
+                    break;
+                }
+
+                // Check filter
+                if (isFiltering) {
+                    if (matchesFilter(log)) {
+                        validStepsFound++;
+                        lastValidLog = log;
+                        movedToLastValid = moved;
+                    }
+                } else {
                     validStepsFound++;
                     lastValidLog = log;
                     movedToLastValid = moved;
                 }
-            } else {
-                validStepsFound++;
-                lastValidLog = log;
-                movedToLastValid = moved;
-            }
-        }
-
-        if (validStepsFound > 0 && lastValidLog) {
-            // Rewind to the last valid position if we overshot
-            const rewindCount = moved - movedToLastValid;
-            for (let i = 0; i < rewindCount; i++) {
-                if (!rewind()) break;
             }
 
-            const indexDelta = isForward ? movedToLastValid : -movedToLastValid;
-            const newIndex = currentStepIndex + indexDelta;
-            setCurrentStepIndex(newIndex);
-            updateFromLog(lastValidLog, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
-
-            if (hitBreakpoint) {
-                setIsPlaying(false);
-            }
-        } else {
-            // No valid steps found (e.g., filtered out everything or hit scan limit)
-            if (totalScanned >= SCAN_LIMIT) {
-                console.warn(`Scan limit reached (${SCAN_LIMIT} steps). Stopped scanning.`);
-                setIsPlaying(false); // Stop autoplay if limit reached
-                // Optionally: Trigger a UI toast/notification here if you had a toast system
-            }
-
-            if (moved > 0) {
-                // Rewind all moves if no valid step found
-                for (let i = 0; i < moved; i++) {
+            if (validStepsFound > 0 && lastValidLog) {
+                // Rewind to the last valid position if we overshot
+                const rewindCount = moved - movedToLastValid;
+                for (let i = 0; i < rewindCount; i++) {
                     if (!rewind()) break;
                 }
+
+                const indexDelta = isForward ? movedToLastValid : -movedToLastValid;
+                const newIndex = currentStepIndex + indexDelta;
+                setCurrentStepIndex(newIndex);
+                updateFromLog(lastValidLog, dynamicTotalSteps || txInfo.trace.length, newIndex, txInfo.transaction.info.hash, txInfo.log_map, iterator);
+
+                if (hitBreakpoint) {
+                    setIsPlaying(false);
+                }
+            } else {
+                // No valid steps found (e.g., filtered out everything or hit scan limit)
+                if (totalScanned >= SCAN_LIMIT) {
+                    console.warn(`Scan limit reached (${SCAN_LIMIT} steps). Stopped scanning.`);
+                    setIsPlaying(false); // Stop autoplay if limit reached
+                    // Optionally: Trigger a UI toast/notification here if you had a toast system
+                }
+
+                if (moved > 0) {
+                    // Rewind all moves if no valid step found
+                    for (let i = 0; i < moved; i++) {
+                        if (!rewind()) break;
+                    }
+                }
             }
-        }
         } finally {
             isProcessingRef.current = false;
         }

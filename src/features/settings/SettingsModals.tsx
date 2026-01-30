@@ -14,7 +14,7 @@ export default function SettingsModals({ activeTab, onClose }: SettingsModalsPro
     // --- STATE MANAGEMENT ---
 
     // 1. General Settings State
-    const [nodeUrl, setNodeUrl] = useState("https://app.functori.com/nod...");
+    const [nodeUrl, setNodeUrl] = useState("https://app.functori.com/reth");
 
     // 2. Alias Settings State
     const { aliases, addAlias, removeAlias } = useAliases();
