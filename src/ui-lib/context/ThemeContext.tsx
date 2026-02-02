@@ -58,7 +58,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     );
 }
 
-// Ce hook permet d'utiliser le thème et la fonction toggleTheme dans n'importe quel composant.
+// This hook allows using the theme and toggleTheme function in any component.
 export function useTheme() {
     const context = useContext(ThemeContext);
     if (context === undefined) {

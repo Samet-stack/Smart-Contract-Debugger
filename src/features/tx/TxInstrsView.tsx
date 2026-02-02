@@ -1,7 +1,7 @@
 // TxInstrsView.tsx
-// Composant détaillé pour afficher TX_INSTRS
-// Design amélioré avec Badge et meilleur espacement 
-// on évite  de tous mettre on structure grâce à la lib
+// Detailed component to display TX_INSTRS
+// Improved design with Badge and better spacing
+// Avoiding monolithic structure using the UI lib
 
 import Badge from "../../ui-lib/components/Badge";
 import type { TxInstrs, InstructionInfo } from "../../types/TxInstrs";
@@ -19,8 +19,8 @@ interface TxInstrsViewProps {
 
 
 
-// Sous-composant pour afficher une instruction (LAST_RUN ou NEXT)
-// Modifié pour enlever les bordures externes et s'intégrer dans la "Grande Case"
+// Sub-component to display an instruction (LAST_RUN or NEXT)
+// Modified to remove external borders and integrate into the "Main Card"
 interface InstructionBlockProps {
     title: string;
     instr: InstructionInfo | null;
@@ -74,10 +74,10 @@ function InstructionBlock({ title, instr, showMemoryChanges = true }: Instructio
 
     return (
         <div>
-            {/* Titre de la section */}
+            {/* Section Title */}
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">{title}</h4>
 
-            {/* Infos principales sur fond sombre */}
+            {/* Main Info on dark background */}
             <div className="rounded-lg bg-gray-100 dark:bg-gray-800/50 p-4 space-y-2">
                 <div className="flex items-center justify-between mb-3">
                     <span className="text-gray-600 dark:text-gray-400 text-sm">
@@ -180,9 +180,9 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
 
     return (
         <div className={`space-y-6 ${className}`}>
-            {/* Header avec Gas - Intégré en haut du contenu */}
+            {/* Header with Gas - Integrated at the top of content */}
             <div className="flex items-center justify-between px-1">
-                {/* Petit label discrêt ou vide si on a déjà le titre de la Card */}
+                {/* Small discrete label or empty if Card title exists */}
                 <span className="text-xs font-medium text-gray-400">Execution Context</span>
 
                 <div className="flex items-center gap-4 text-xs font-mono">
@@ -195,7 +195,7 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
                 </div>
             </div>
 
-            {/* Separator discret sous le header gas */}
+            {/* Discrete separator under gas header */}
             {/* <div className="border-t border-gray-100 dark:border-gray-800" /> */}
 
             {/* 2-Column Layout for Last and Next Instructions */}

@@ -1,14 +1,14 @@
-// MemoryView.tsx   
-// Ce composant affiche les segments mémoire de l'EVM sous forme de tableau.
+// MemoryView.tsx
+// Displays EVM memory segments as a table.
 // Each line shows: Offset (position), Value (hex), and the instruction
-// DÉPENDANCES :
-//   - Table (de ui-lib) : Composant tableau réutilisable
-//   - MemorySegment (type) : Structure des données mémoire
+// DEPENDENCIES:
+//   - Table (from ui-lib): Reusable table component
+//   - MemorySegment (type): Memory data structure
 
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../../ui-lib/components/Table";
 import type { MemorySegment } from "../../types/MemorySegment";
 
-// Props du composant : segments = tableau de données, className = style optionnel
+// Component Props: segments = data array, className = optional style
 interface MemoryViewProps {
     segments: MemorySegment[];
     className?: string;
@@ -41,19 +41,19 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
                 <TableBody>
                     {segments.map((segment) => (
                         <TableRow key={segment.offset}>
-                            {/* Colonne 1 : Position en mémoire (0, 32, 64...) */}
+                            {/* Column 1: Memory Position (0, 32, 64...) */}
                             <TableCell className="text-blue-500 dark:text-blue-400">
                                 {segment.offset}
                             </TableCell>
 
-                            {/* Colonne 2 : Valeur hexadécimale stockée */}
-                            {/* break-all = permet de couper les longues chaînes */}
+                            {/* Column 2: Stored Hex Value */}
+                            {/* break-all = allows cutting long strings */}
                             <TableCell className="max-w-xs break-all text-xs" title={segment.value}>
                                 {segment.value}
                             </TableCell>
 
-                            {/* Colonne 3 : Instruction qui a modifié ce segment */}
-                            {/* Affiche le Program Counter (PC) et l'Opcode (MSTORE, etc.) */}
+                            {/* Column 3: Instruction that modified this segment */}
+                            {/* Displays Program Counter (PC) and Opcode (MSTORE, etc.) */}
                             <TableCell className="text-green-600 dark:text-green-400">
                                 {segment.modifiedAt ? (
                                     <>
@@ -67,7 +67,7 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
                         </TableRow>
                     ))}
 
-                    {/* Message si aucun segment à afficher */}
+                    {/* Message if no segments to display */}
                     {segments.length === 0 && (
                         <TableRow>
                             <TableCell className="text-center text-gray-500 italic" colSpan={3}>

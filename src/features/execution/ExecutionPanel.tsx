@@ -183,7 +183,7 @@ export default function ExecutionPanel({
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Instructions per step</p>
                         </div>
 
-                        {/* Stepper control stylé */}
+                        {/* Styled Stepper Control */}
                         <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-lg p-0.5 shadow-inner border border-gray-200 dark:border-gray-700">
                             <button
                                 onClick={() => onStepSizeChange(Math.max(1, stepSize - 1))}
@@ -207,7 +207,7 @@ export default function ExecutionPanel({
                         </div>
                     </div>
 
-                    {/* Presets rapides */}
+                    {/* Quick Presets */}
                     <div className="flex gap-1.5 mt-3">
                         {[1, 5, 10, 50, 100].map((preset) => (
                             <button
@@ -228,7 +228,7 @@ export default function ExecutionPanel({
                 </div>
             </div>
 
-            {/* Footer avec raccourcis */}
+            {/* Footer with Shortcuts */}
             <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800">
                 <p className="text-[10px] text-gray-400 text-center flex items-center justify-center gap-2 flex-wrap">
                     <span>

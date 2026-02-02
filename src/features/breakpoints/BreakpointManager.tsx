@@ -65,7 +65,7 @@ export default function BreakpointManager({
                                 <span className="font-bold">{bp.type.charAt(0)}</span>
                                 {bp.value.substring(0, 6)}...{bp.value.substring(bp.value.length - 4)}
                                 <button onClick={() => removeBreakpoint(bp.id)} className="hover:text-red-500 rounded-full p-0.5">
-                                    {/* Petite croix SVG interne */}
+                                    {/* Small SVG cross */}
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
                                 </button>
                             </span>
@@ -115,7 +115,7 @@ export default function BreakpointManager({
                 <div className="rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/50 p-3">
                     <p className="text-xs text-gray-500 mb-2">Memory Range</p>
 
-                    {/* Interface avancée style Memory Range avec +/- */}
+                    {/* Advanced Memory Range Interface with +/- */}
                     <div className="flex flex-col gap-2">
                         {/* Enable Button - Full Width */}
                         <Button
@@ -165,7 +165,7 @@ export default function BreakpointManager({
                         </div>
                     </div>
                 </div>
-                {/* J'utilise flex-wrap pour que ça passe à la ligne si c'est trop serré */}
+                {/* Using flex-wrap to handle tight spaces */}
                 <div className="flex flex-col gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
                     <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600 dark:text-gray-400">Metacall</span>
