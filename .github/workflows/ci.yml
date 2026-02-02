@@ -21,11 +21,6 @@ jobs:
       - name: Install
         run: npm install
 
-      - name: Ensure Rollup Linux binary
-        run: |
-          ROLLUP_VERSION=$(node -p "require('rollup/package.json').version")
-          npm install --no-save @rollup/rollup-linux-x64-gnu@$ROLLUP_VERSION
-
       - name: Lint
         run: npm run lint
 
