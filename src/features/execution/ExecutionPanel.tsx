@@ -2,6 +2,7 @@
 // Execution Panel with text buttons + readable icons
 // Refactored to be stateless and controlled by parent (useApollo hook)
 
+import type { ReactNode } from "react";
 import Tooltip from "../../ui-lib/components/Tooltip";
 
 interface ExecutionPanelProps {
@@ -15,6 +16,7 @@ interface ExecutionPanelProps {
     // Controlled State from useApollo
     isPlaying: false | 'forward' | 'backward';
     onTogglePlay: (direction: 'forward' | 'backward') => void;
+    headerAction?: ReactNode;
 }
 
 const ChevronLeftIcon = () => (
@@ -57,6 +59,7 @@ export default function ExecutionPanel({
     onPrev,
     isPlaying,
     onTogglePlay,
+    headerAction,
 }:
     ExecutionPanelProps) {
 
@@ -75,14 +78,14 @@ export default function ExecutionPanel({
     return (
         <div className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm ${className}`}>
             {/* Header with Compact Controls */}
-            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/30 gap-4">
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center bg-gray-50/50 dark:bg-gray-800/30 gap-4">
                 <div className="flex items-center gap-2 shrink-0">
                     <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
 
                 {/* Compact Control Group */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 ml-auto">
 
                     {/* Left Group: Backwards */}
                     <div className="inline-flex rounded-lg shadow-sm isolate">
@@ -131,6 +134,7 @@ export default function ExecutionPanel({
                             </button>
                         </Tooltip>
                     </div>
+                    {headerAction}
                 </div>
             </div>
 

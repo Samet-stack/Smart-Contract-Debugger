@@ -372,10 +372,6 @@ export default function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
-              <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-              <span className="hidden lg:inline">Load</span>
-            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -385,10 +381,6 @@ export default function App() {
             >
               <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
               <span className="hidden lg:inline">{status === "Loading" ? "Loading..." : "Load URL"}</span>
-            </Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap h-8 text-xs rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors px-2 lg:px-3">
-              <svg className="w-4 h-4 lg:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              <span className="hidden lg:inline">Import</span>
             </Button>
 
             {/* Status Badge */}
@@ -412,18 +404,6 @@ export default function App() {
             "space-y-4 transition-all duration-300 relative",
             leftCollapsed ? "hidden" : "col-span-12 md:col-span-4 lg:col-span-3"
           )}>
-            {/* Collapse Toggle - Floating on the Right Edge */}
-            <button
-              type="button"
-              onClick={() => setLeftCollapsed(true)}
-              title="Collapse panels"
-              className="absolute z-20 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-brand-500 hover:border-brand-500 transition-all flex items-center justify-center shadow-sm -right-3 top-6"
-            >
-              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
-            </button>
-
             <>
               {/* Execution - Modern Panel */}
               <ExecutionPanel
@@ -435,6 +415,22 @@ export default function App() {
                 onPrev={() => prev(stepSize)}
                 isPlaying={isPlaying}
                 onTogglePlay={togglePlay}
+                headerAction={(
+                  <button
+                    type="button"
+                    onClick={() => setLeftCollapsed(true)}
+                    title="Collapse panels"
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border",
+                      "bg-white/90 text-gray-700 border-gray-200 shadow-sm",
+                      "hover:bg-white hover:text-gray-900 hover:border-gray-300",
+                      "dark:bg-gray-900/80 dark:text-gray-200 dark:border-gray-700 dark:hover:border-gray-600",
+                      "px-3 py-1.5 text-sm font-bold tracking-wide transition-all"
+                    )}
+                  >
+                    <span className="text-sm font-bold">{`<<`}</span>
+                  </button>
+                )}
               />
 
               {/* Filters */}
@@ -611,22 +607,27 @@ export default function App() {
 
           {/* ===== CENTER COLUMN (5/12 on LG, 8/12 on MD) ===== */}
           <div className={cn(
-            "col-span-12 md:col-span-8 space-y-4 transition-all duration-300 relative",
-            leftCollapsed ? "lg:col-span-8" : "lg:col-span-5"
+            "col-span-12 md:col-span-8 transition-all duration-300 relative",
+            leftCollapsed ? "lg:col-span-6 space-y-3" : "lg:col-span-5 space-y-4"
           )}>
             {/* Expand Button - Visible only when sidebar is collapsed */}
-            {/* Expand Button - Visible only when sidebar is collapsed */}
             {leftCollapsed && (
-              <button
-                type="button"
-                onClick={() => setLeftCollapsed(false)}
-                title="Expand panels"
-                className="absolute z-20 h-6 w-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-brand-500 hover:border-brand-500 transition-all flex items-center justify-center shadow-sm -left-3 top-6"
-              >
-                <svg className="h-3.5 w-3.5 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
+              <div className="flex items-center justify-start px-1">
+                <button
+                  type="button"
+                  onClick={() => setLeftCollapsed(false)}
+                  title="Expand panels"
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border",
+                    "bg-white/90 text-gray-700 border-gray-200 shadow-lg backdrop-blur",
+                    "hover:bg-white hover:text-gray-900 hover:border-gray-300",
+                    "dark:bg-gray-900/80 dark:text-gray-200 dark:border-gray-700 dark:hover:border-gray-600",
+                    "px-3.5 py-1.5 text-sm font-bold tracking-wide transition-all"
+                  )}
+                >
+                  <span className="text-sm font-bold">{`>>`}</span>
+                </button>
+              </div>
             )}
 
             {/* Side-by-Side Grid when collapsed: Execution Left | OpCodes Right */}
@@ -636,7 +637,12 @@ export default function App() {
               {/* OpCodes (Right Cell in Grid, or Full Width if not collapsed) */}
               <Card
                 title="Contract & OpCodes"
-                className="h-[350px] flex flex-col"
+                className={cn(
+                  "flex flex-col",
+                  leftCollapsed
+                    ? "h-[260px] overflow-hidden [&>div:first-child]:py-2 [&>div:first-child]:px-3 [&>div:last-child]:p-3"
+                    : "h-[350px]"
+                )}
               >
                 <ContractViewer
                   code={contractCode}
@@ -649,7 +655,10 @@ export default function App() {
 
             <Card
               title="Instructions"
-              className="relative"
+              className={cn(
+                "relative",
+                leftCollapsed && "h-[300px] overflow-hidden [&>div:first-child]:py-2 [&>div:first-child]:px-3 [&>div:last-child]:p-3 [&>div:last-child]:overflow-auto"
+              )}
               headerEnd={
                 leftCollapsed && (
                   <div className="flex items-center gap-2">
@@ -709,11 +718,16 @@ export default function App() {
                 )
               }
             >
-              <TxInstrsView data={txInstrsData} />
+              <TxInstrsView data={txInstrsData} className={leftCollapsed ? "space-y-4" : ""} />
             </Card>
 
             {/* Call Context (Moved from Right to Center) */}
-            <Card title="Current Call Context">
+            <Card
+              title="Current Call Context"
+              className={cn(
+                leftCollapsed && "h-[180px] overflow-hidden [&>div:first-child]:py-2 [&>div:first-child]:px-3 [&>div:last-child]:p-2 [&>div:last-child]:overflow-auto"
+              )}
+            >
               {/* Show context for BOTH last and next instructions, to mirror the instructions view */}
               <CallContextView
                 lastInstr={txInstrsData.lastRunInstr}
@@ -727,7 +741,10 @@ export default function App() {
           </div>
 
           {/* ===== RIGHT COLUMN (4/12 on LG, 12/12 on MD) ===== */}
-          <div className="col-span-12 md:col-span-12 lg:col-span-4 space-y-4">
+          <div className={cn(
+            "col-span-12 md:col-span-12 space-y-4",
+            leftCollapsed ? "lg:col-span-6" : "lg:col-span-4"
+          )}>
             {/* Stack */}
             <Card title="Stack">
               <StackView

@@ -170,7 +170,7 @@ export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps
     const hasCallSection = Boolean(callInstr?.callData || callInstr?.functionSelector);
 
     return (
-        <div className={`${className} space-y-6`}>
+        <div className={`space-y-6 ${className}`}>
             {/* Header avec Gas - Intégré en haut du contenu */}
             <div className="flex items-center justify-between px-1">
                 {/* Petit label discrêt ou vide si on a déjà le titre de la Card */}
