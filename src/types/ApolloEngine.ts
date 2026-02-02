@@ -1,3 +1,6 @@
+/**
+ * TypeScript bindings for the Apollo Rust/Wasm Engine.
+ */
 export interface Apollo {
   load_transaction(arg: load_transaction_arg): Promise<transaction_info>;
 }

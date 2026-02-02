@@ -8,6 +8,11 @@ interface CardProps {
     headerEnd?: ReactNode; // Renamed to match usage
 }
 
+/**
+ * Reusable Card Component.
+ * Used for wrapping feature sections (like Stack, Memory, Instructions).
+ * Can define a title and an optional header action (headerEnd).
+ */
 export default function Card({ title, children, className = "", headerEnd }: CardProps) {
     return (
         <div

@@ -10,6 +10,10 @@ interface ButtonProps {
     className?: string;
 }
 
+/**
+ * Reusable Button Component.
+ * Supports variants (primary, outline, success, danger) and sizes (sm, md).
+ */
 export default function Button({
     children,
     size = "md",
@@ -27,7 +31,7 @@ export default function Button({
         primary: "bg-brand-500 text-white hover:bg-brand-600 disabled:bg-brand-300",
         outline: "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700",
         success: "bg-success-500/20 text-success-400 border border-success-500/30 hover:bg-success-500/30",
-        danger: "bg-danger-500/20 text-danger-400 border border-danger-500/30 hover:bg-danger-500/30", // ajouter danger hors de la bibliothèque test 
+        danger: "bg-danger-500/20 text-danger-400 border border-danger-500/30 hover:bg-danger-500/30", // adding danger variant outside of test library 
     };
 
     return (

@@ -25,7 +25,7 @@ const getActualLogMap = (logMap: LogMapLike): Map<number, log_infos> | undefined
     return undefined;
 };
 
-// Helper: Map Engine Stack to UI StackItem
+/** Maps engine stack to UI StackItems. */
 export const mapStack = (engineStack: EngineStack, logMap?: LogMapLike): StackItem[] => {
     if (!engineStack || !Array.isArray(engineStack)) return [];
 
@@ -52,7 +52,7 @@ export const mapStack = (engineStack: EngineStack, logMap?: LogMapLike): StackIt
     });
 };
 
-// Helper: Map Engine Storage to UI StorageItem[]
+/** Maps engine storage to UI StorageItems, tracking local modifications. */
 export const mapStorage = (
     engineStorage: EngineStorage | undefined,
     logMap: LogMapLike,
@@ -140,7 +140,7 @@ export const mapTransientStorage = (
     return items;
 };
 
-// Helper: Map contract code to UI opcodes
+/** Formats raw opcodes for the Contract Viewer. */
 export const mapContractCode = (code: instr[]): ContractOpcode[] => {
     return code.map((instr) => ({
         pc: instr.pc,
@@ -208,7 +208,10 @@ export const buildFullMemoryMappings = (
     return mappings;
 };
 
-// Helper: Map Engine Log to DebuggerState
+/**
+ * Main Reducer: Converts a single engine log entry into the full Debugger State.
+ * Handles memory, stack, storage, and instruction mapping for the current step.
+ */
 export const mapLogToState = (
     log: log_infos | undefined,
     totalSteps: number,

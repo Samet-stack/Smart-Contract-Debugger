@@ -10,6 +10,13 @@ interface SettingsModalsProps {
     onClose: () => void;
 }
 
+/**
+ * Settings Modals Manager.
+ * Manages various settings modals:
+ * - General: Node URL configuration
+ * - Alias: Manage contract address aliases
+ * - Shortcuts: View keyboard shortcuts
+ */
 export default function SettingsModals({ activeTab, onClose }: SettingsModalsProps) {
     // --- STATE MANAGEMENT ---
 

@@ -1,23 +1,23 @@
-// Chaque élément a un statut pour le highlighting (consommé, produit, neutre).
+// Each item has a status for highlighting (consumed, produced, neutral).
 export type StackItemStatus = "consumed" | "produced" | "neutral";
 
 export interface StackItem {
     value: string;
     label?: string;
 
-    // Status pour le highlighting
-    // - consumed (rouge) : L'instruction a consommé cet élément
-    // - produced (vert) : L'instruction a produit cet élément
-    // - neutral : Pas affecté par l'instruction courante
+    // Highlighting status
+    // - consumed (red): The instruction consumed this item
+    // - produced (green): The instruction produced this item
+    // - neutral: Not affected by the current instruction
     status: StackItemStatus;
 
 
-    // Information sur l'instruction qui a créé cet élément
+    // Info about the instruction that created this item
     modifiedAt?: {
         pc: number;
         opcode: string;
 
     };
-    // Flag pour indiquer un élément qui vient d'être dépilé (fantôme)
+    // Flag to indicate a recently popped item (ghost)
     isPopped?: boolean;
 }

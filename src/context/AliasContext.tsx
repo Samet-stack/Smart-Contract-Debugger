@@ -40,6 +40,10 @@ const loadAliases = (): Alias[] => {
     }
 };
 
+/**
+ * Alias Manager.
+ * Persists Address -> Label mappings to LocalStorage.
+ */
 export const AliasProvider = ({ children }: { children: ReactNode }) => {
     const [aliases, setAliases] = useState<Alias[]>(() => loadAliases());
 

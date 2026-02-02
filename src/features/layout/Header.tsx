@@ -19,6 +19,11 @@ interface HeaderProps {
     setActiveSettingsTab: Dispatch<SetStateAction<SettingsTab | null>>;
 }
 
+/**
+ * Header Component
+ * Displays the Logo, Transaction Search Bar, Settings, and Load Button.
+ * It handles the "Load URL" action and theme toggling.
+ */
 export default function Header({
     txHash,
     setTxHash,

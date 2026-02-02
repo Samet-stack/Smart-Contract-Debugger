@@ -7,9 +7,22 @@ interface ShortcutsOptions {
     onToggleAutoPrev: () => void;
     onSpeedUp: () => void;
     onSpeedDown: () => void;
-    onTogglePlay: () => void; // Optionnel (Espace)
+    onTogglePlay: () => void; // Optional (Space)
 }
 
+/**
+ * Hook to handle global keyboard shortcuts for the debugger.
+ * Includes safety checks to avoid triggering shortcuts when typing in input fields.
+ *
+ * Mappings:
+ * - ArrowRight / n: Next Step
+ * - ArrowLeft / p: Previous Step
+ * - Shift + n / N: Toggle Auto-Next
+ * - Shift + p / P: Toggle Auto-Prev
+ * - a: Speed Up
+ * - d: Speed Down
+ * - Space: Toggle Play/Pause
+ */
 export const useKeyboardShortcuts = ({
     onNext,
     onPrev,
@@ -21,14 +34,14 @@ export const useKeyboardShortcuts = ({
 }: ShortcutsOptions) => {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            // 1. Sécurité : Ignorer si l'utilisateur écrit dans un input
+            // 1. Security: Ignore if user is typing in an input
             const target = event.target as HTMLElement;
             if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable) {
                 return;
             }
             const key = event.key;
             const shift = event.shiftKey;
-            // 2. Mapping des touches
+            // 2. Key mapping
             switch (key) {
                 case "ArrowRight":
                     onNext();
@@ -41,7 +54,7 @@ export const useKeyboardShortcuts = ({
                     else onNext();                 // n -> Next Step
                     break;
 
-                case "N": // Si le clavier envoie directement N
+                case "N": // If keyboard triggers N directly
                     onToggleAutoNext();
                     break;
                 case "p":

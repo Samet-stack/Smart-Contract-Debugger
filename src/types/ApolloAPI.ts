@@ -9,7 +9,7 @@ export interface StackItem {
 export interface MemorySegment {
     offset: number;
     value: string;
-    ascii?: string; // Representation ASCII pour l'affichage
+    ascii?: string; // ASCII representation for display
     modifiedAt?: { pc: number; opcode: string };
     isModifiedInCurrentStep: boolean;
 }

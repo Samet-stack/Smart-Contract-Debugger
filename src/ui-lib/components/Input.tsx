@@ -8,13 +8,17 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     className?: string;
 }
 
+/**
+ * Reusable Input Component.
+ * A simple wrapper around the native HTML input with consistent styling.
+ */
 export default function Input({
     type = "text",
     placeholder,
     value,
     onChange,
     className = "",
-    ...rest
+    ...props
 }: InputProps) {
     return (
         <input
@@ -26,8 +30,7 @@ export default function Input({
                 "h-10 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:placeholder:text-gray-500 transition-colors duration-300",
                 className
             )}
-            {...rest}
+            {...props}
         />
     );
 }
-

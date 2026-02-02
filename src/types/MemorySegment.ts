@@ -1,21 +1,20 @@
 // MemorySegment.ts
-// Ce type représente un segment de mémoire dans l'EVM.
-// en fonction du feed back de thomas, j'ai fais une structure plus simple
+// This type represents a memory segment in the EVM.
+// Simplified structure based on feedback
 
 export interface MemorySegment {
-    // Position en mémoire (adresse). Ex: 0, 32, 64, 96...
+    // Memory position (address). Ex: 0, 32, 64, 96...
     offset: number;
 
-    // Valeur hexadécimale stockée à cet offset
+    // Hexadecimal value stored at this offset
     value: string;
 
-    // Information sur l'instruction qui a modifié ce segment
-    // Information sur l'instruction qui a modifié ce segment
+    // Info about the instruction that modified this segment
     modifiedAt?: {
-        // Program Counter (PC) : position de l'instruction dans le bytecode
+        // Program Counter (PC): instruction position in bytecode
         pc: number;
 
-        // Opcode : nom de l'instruction EVM (MSTORE, CALLDATACOPY, etc.)
+        // Opcode: EVM instruction name (MSTORE, CALLDATACOPY, etc.)
         opcode: string;
     };
 

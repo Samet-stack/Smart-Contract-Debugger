@@ -31,6 +31,10 @@ import TransientStorageView from "./features/storage/TransientStorageView";
 // CALL-type opcodes for Metacall breakpoint
 const METACALL_OPCODES = ["CALL", "STATICCALL", "DELEGATECALL", "CALLCODE", "CREATE", "CREATE2"];
 
+/**
+ * Main App Component.
+ * Layout container that initializes `useApollo` and distributes state to child views.
+ */
 export default function App() {
   const [leftCollapsed, setLeftCollapsed] = useState(false); // Sidebar State
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
@@ -307,8 +311,13 @@ export default function App() {
       />
 
       {/* ========== MAIN CONTENT ========== */}
+      {/* 
+        Grid Layout:
+        - MD: 12 columns
+        - LG: 12 columns
+      */}
       <main className="p-6">
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-140px)]">
           {/* ===== LEFT COLUMN (3/12 on LG, 4/12 on MD) ===== */}
           <div className={cn(
             "space-y-4 transition-all duration-300 relative",

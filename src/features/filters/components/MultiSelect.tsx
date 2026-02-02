@@ -50,7 +50,7 @@ export default function MultiSelect({
   useEffect(() => {
     if (isOpen && optionRefs.current[highlightedIndex]) {
       optionRefs.current[highlightedIndex]?.scrollIntoView({
-        block: "nearest", // Scroll juste ce qu'il faut pour que ce soit visible
+        block: "nearest", // Scroll just enough to be visible
       });
     }
   }, [highlightedIndex, isOpen]);
@@ -84,7 +84,7 @@ export default function MultiSelect({
     // Arrow key navigation
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      // On descend dans la liste (sans dépasser la fin)
+      // Move down the list (without going past the end)
       if (!isOpen) {
         setIsOpen(true);
         setHighlightedIndex(0);
@@ -93,7 +93,7 @@ export default function MultiSelect({
       }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      // On monte dans la liste (sans dépasser le début)
+      // Move up the list (without going past the start)
       if (!isOpen) {
         setIsOpen(true);
         setHighlightedIndex(filteredOptions.length - 1);

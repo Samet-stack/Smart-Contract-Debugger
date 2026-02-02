@@ -21,6 +21,11 @@ export interface InstructionFiltersProps {
   onChange: (filters: string[]) => void;
 }
 
+/**
+ * Instruction Filters Component.
+ * Allows filtering the execution trace by specific opcodes.
+ * Users can select multiple opcodes from the dropdown or type custom values.
+ */
 export default function InstructionFilters({ filters, onChange }: InstructionFiltersProps) {
   // Function to verify if valid hex value (0x...)
   const isValidHex = (val: string) => /^0x[0-9a-fA-F]+$/.test(val);

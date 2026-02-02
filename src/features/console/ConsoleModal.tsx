@@ -3,6 +3,7 @@ interface ConsoleModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
+/** Console Modal (Upcoming Feature). Displays placeholder. */
 export default function ConsoleModal({ isOpen, onClose }: ConsoleModalProps) {
     return (
         <Modal

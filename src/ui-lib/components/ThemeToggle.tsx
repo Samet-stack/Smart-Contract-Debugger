@@ -3,7 +3,7 @@ import { useTheme } from "../context/ThemeContext";
 export default function ThemeToggle() {
     const { theme, toggleTheme } = useTheme();
 
-    // Bouton Switch avec animations CSS (transition-transform, opacity)
+    // Switch button with CSS animations (transition-transform, opacity)
     return (
         <button
             onClick={toggleTheme}

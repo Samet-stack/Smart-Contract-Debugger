@@ -24,6 +24,9 @@ interface BreakpointManagerProps {
     setSkipContract: (enabled: boolean) => void;
 }
 
+/**
+ * Side Panel for managing Breakpoints, Filters, and Memory Ranges.
+ */
 export default function BreakpointManager({
     breakpoints,
     addBreakpoint,

@@ -91,6 +91,12 @@ function ContextBlock({ instr, showAliases }: { instr: InstructionInfo | null, s
     );
 }
 
+/**
+ * Call Context View.
+ * Displays the context (Contract Address, Selector, Call Data) for both
+ * the Last Run Instruction and the Next Instruction.
+ * Supports expanding/collapsing raw call data.
+ */
 export default function CallContextView({ lastInstr, nextInstr, showAliases = true }: CallContextViewProps) {
     return (
         <div className="p-2 relative">

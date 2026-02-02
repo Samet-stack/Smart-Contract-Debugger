@@ -1,26 +1,26 @@
 // Storage.ts
-// Types pour le Storage et Transient Storage de l'EVM
+// Types for EVM Storage and Transient Storage
 
 export interface StorageItem {
-    // Clé du slot de storage (32 bytes hex)
+    // Storage slot key (32 bytes hex)
     key: string;
 
-    // Valeur stockée (32 bytes hex)
+    // Stored value (32 bytes hex)
     value: string;
 
-    // ID du log qui a modifié ce slot (pour tracer l'origine)
+    // Log ID that modified this slot (for tracing origin)
     logId?: number;
 
-    // Information sur la modification
+    // Modification info
     modifiedAt?: {
         pc: number;
         opcode: string;
     };
 
-    // Est-ce que ce slot vient d'être créé ?
+    // Is this slot newly created?
     isNewSlot?: boolean;
 
-    // Est-ce que ce slot a été modifié à cette étape ?
+    // Was this slot modified in this step?
     isModifiedInCurrentStep?: boolean;
 }
 
@@ -31,22 +31,22 @@ export interface StorageUpdate {
 }
 
 export interface TransientStorageItem {
-    // Clé du slot transient (32 bytes hex)
+    // Transient slot key (32 bytes hex)
     key: string;
 
-    // Valeur stockée (32 bytes hex)
+    // Stored value (32 bytes hex)
     value: string;
 
-    // ID du log qui a modifié ce slot
+    // Log ID that modified this slot
     logId: number;
 
-    // Information sur la modification
+    // Modification info
     modifiedAt?: {
         pc: number;
         opcode: string;
     };
 
-    // Est-ce que ce slot a été modifié à cette étape ?
+    // Was this slot modified in this step?
     isModifiedInCurrentStep?: boolean;
 }
 

@@ -1,5 +1,5 @@
 // StorageView.tsx
-// Composant pour afficher le Storage de l'EVM
+// Component to display EVM Storage
 
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "../../ui-lib/components/Table";
 import type { StorageItem } from "../../types/Storage";
@@ -10,7 +10,7 @@ interface StorageViewProps {
 }
 
 export default function StorageView({ items, className = "" }: StorageViewProps) {
-    // Fonction pour tronquer les hex longs
+    // Function to truncate long hex strings
     const truncateHex = (hex: string, start = 6, end = 4) => {
         if (hex.length <= start + end + 2) return hex;
         return `${hex.slice(0, start + 2)}...${hex.slice(-end)}`;

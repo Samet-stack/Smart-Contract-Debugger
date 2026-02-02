@@ -9,6 +9,10 @@ interface SettingsMenuProps {
     className?: string;
 }
 
+/**
+ * Settings Menu Dropdown.
+ * Displays the list of available settings categories (General, Alias, Shortcuts).
+ */
 export default function SettingsMenu({ onSelect, onClose, className }: SettingsMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
 

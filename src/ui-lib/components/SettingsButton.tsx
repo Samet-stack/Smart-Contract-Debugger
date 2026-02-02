@@ -3,8 +3,8 @@ interface SettingsButtonProps {
 }
 
 export default function SettingsButton({ onClick }: SettingsButtonProps) {
-    // Ce composant est un bouton "Paramètres" réutilisable.
-    // Il utilise les classes Tailwind pour le style (rond, bordure, mode sombre).
+    // This component is a reusable "Settings" button.
+    // It uses Tailwind classes for styling (round, border, dark mode).
     return (
         <button
             onClick={onClick}

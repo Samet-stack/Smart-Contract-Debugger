@@ -33,10 +33,20 @@ export interface TransactionDetails {
     transactionIndex: number;
 }
 
+/**
+ * Core Debugger Hook.
+ * Manages interaction with the Apollo Engine (WASM), transaction loading,
+ * trace navigation, and state mapping.
+ */
 export const useApollo = () => {
+    // ---------------------------------------------------------------------------
     // 1. Core Engine State
+    // ---------------------------------------------------------------------------
+    // Status of the debugger: "Ready", "Loading", or "Error"
     const [status, setStatus] = useState<ApolloStatus>("Ready");
+    // Raw transaction info loaded from the engine
     const [txInfo, setTxInfo] = useState<transaction_info | null>(null);
+    // Iterator to traverse the trace (Rust/Wasm binding)
     const [iterator, setIterator] = useState<trace_iterator | null>(null);
 
     // 2. UI State
@@ -89,6 +99,7 @@ export const useApollo = () => {
     const [prevLogData, setPrevLogData] = useState<log_infos | null>(null);
     const [nextInstruction, setNextInstruction] = useState<InstructionInfo | null>(null);
 
+    /** Maps a log entry to `InstructionInfo` for the "Next Instruction" view. */
     const mapLogToInstruction = useCallback((
         log: log_infos,
         stepIndex: number,
@@ -128,9 +139,10 @@ export const useApollo = () => {
         };
     }, []);
 
-    // Update all state from current log
-    // Warning: 'initialTotalSteps' arg here is the initial trace length
-    // iter is optional - if provided, we'll peek the next instruction
+    /**
+     * Updates all React state from a log entry.
+     * Handles Context changes (Depth/Address), Storage updates, and History.
+     */
     const updateFromLog = useCallback((
         log: log_infos | undefined,
         initialTotalSteps: number,
@@ -231,7 +243,15 @@ export const useApollo = () => {
         // Next instruction is derived from current log (next_instr).
     }, [mapLogToInstruction]);
 
+    // ---------------------------------------------------------------------------
     // 9. Initialization
+    // ---------------------------------------------------------------------------
+    /**
+     * Loads a transaction by its hash using the global Apollo engine.
+     * Resets all state and prepares the trace iterator.
+     *
+     * @param hash - The transaction hash (0x...)
+     */
     const loadTransaction = useCallback(async (hash: string) => {
         if (!hash) return;
 
@@ -472,7 +492,17 @@ export const useApollo = () => {
     }, [filters]);
 
 
-    // Unified async step function for both forward and backward navigation
+    /**
+     * Advanced stepping function that handles both forward and backward navigation.
+     * It includes logic for:
+     * - Skipping multiple steps (count)
+     * - Checking Breakpoints (Storage, Transient, Memory, etc.)
+     * - Applying Filters (Opcode whitelist)
+     * - Skipping internal contract calls (skipContract)
+     *
+     * @param direction - 'forward' or 'backward'
+     * @param count - Number of steps to attempt
+     */
     const step = useCallback(async (direction: 'forward' | 'backward', count = 1) => {
         if (!iterator || !txInfo) return;
         if (isProcessingRef.current) return;

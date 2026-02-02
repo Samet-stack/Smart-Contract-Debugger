@@ -27,6 +27,10 @@ interface DebuggerContextProps {
     setBreakpoint: (bp: Breakpoint) => void;
 }
 const DebuggerContext = createContext<DebuggerContextProps | null>(null);
+/**
+ * Global Debugger API Provider.
+ * Connects to the injected `window.ApolloDebugger` engine.
+ */
 export const DebuggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [state, setState] = useState<DebuggerState>(initialState);
     const [api] = useState<ApolloDebuggerAPI | null>(() => window.ApolloDebugger ?? null);

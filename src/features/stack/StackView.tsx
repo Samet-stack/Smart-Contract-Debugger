@@ -81,6 +81,15 @@ function AccordionItem({
     );
 }
 
+/**
+ * Stack View Component.
+ * Displays the current EVM stack.
+ * Highlights:
+ * - Produced items (Green)
+ * - Consumed items (Red)
+ * - Neutral items (Gray)
+ * Supports visualizing the stack growing/shrinking during execution.
+ */
 export default function StackView({ visibleStack, fullHistory = [], neutralItems = [], className = "" }: StackViewProps) {
     const [activeTab, setActiveTab] = useState<TabType>('value');
     const { current, previous } = visibleStack || { current: null, previous: null };
@@ -100,8 +109,8 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`flex-1 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 ${activeTab === tab.key
-                                ? 'text-brand-600 dark:text-brand-400 border-brand-500 bg-white dark:bg-gray-900'
-                                : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+                            ? 'text-brand-600 dark:text-brand-400 border-brand-500 bg-white dark:bg-gray-900'
+                            : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                     >
                         {tab.label}

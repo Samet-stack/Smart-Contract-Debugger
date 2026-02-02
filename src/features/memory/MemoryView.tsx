@@ -14,6 +14,14 @@ interface MemoryViewProps {
     className?: string;
 }
 
+/**
+ * Memory View Component.
+ * Displays the EVM memory state in 32-byte segments.
+ * Highlights:
+ * - Current modifications (Green/Red based on instruction)
+ * - ASCII representation of valid characters
+ * - Tooltip with "Modified At" info
+ */
 export default function MemoryView({ segments, className = "" }: MemoryViewProps) {
 
     return (

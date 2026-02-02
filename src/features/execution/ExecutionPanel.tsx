@@ -49,6 +49,10 @@ const StopIcon = () => (
     </svg>
 );
 
+/**
+ * Execution Control Panel.
+ * Manages Play/Pause/Step actions and speed settings.
+ */
 export default function ExecutionPanel({
     speed,
     onSpeedChange,

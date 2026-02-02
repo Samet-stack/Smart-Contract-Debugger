@@ -11,6 +11,12 @@ interface ContractViewerProps {
     externalAddress?: string;
 }
 
+/**
+ * Contract Viewer Component.
+ * Displays the list of opcodes for the current contract.
+ * Highlights the current program counter (PC) and handles scrolling.
+ * Supports displaying external contract info if available.
+ */
 export default function ContractViewer({ code, currentPc, isExternalContract, externalAddress }: ContractViewerProps) {
     const activeRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -72,42 +78,42 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                 ref={containerRef}
                 className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed"
             >
-            <div className="space-y-0.5">
-                {code.map((op, index) => {
-                    const isCurrentPc = currentPc === op.pc;
-                    return (
-                        <div
-                            key={index}
-                            ref={isCurrentPc ? activeRef : null}
-                            className={cn(
-                                "flex items-center gap-3 px-2 py-1 rounded transition-colors duration-150",
-                                isCurrentPc
-                                    ? "bg-green-300 dark:bg-green-600/70 text-green-950 dark:text-green-50 font-semibold shadow-md"
-                                    : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-                            )}
-                        >
-                            <span className={cn(
-                                "w-10 text-right font-mono text-[10px]",
-                                isCurrentPc ? "text-green-800 dark:text-green-100 font-bold" : "opacity-60"
-                            )}>
-                                {op.pc}
-                            </span>
-                            <span className={cn(
-                                "font-mono font-medium",
-                                isCurrentPc ? "text-green-900 dark:text-green-50" : "text-purple-600 dark:text-purple-400"
-                            )}>
-                                {op.op}
-                            </span>
-                            {op.arg && (
-                                <span className="text-gray-500 dark:text-gray-500 text-[10px] truncate max-w-[200px]" title={op.arg}>
-                                    {op.arg}
+                <div className="space-y-0.5">
+                    {code.map((op, index) => {
+                        const isCurrentPc = currentPc === op.pc;
+                        return (
+                            <div
+                                key={index}
+                                ref={isCurrentPc ? activeRef : null}
+                                className={cn(
+                                    "flex items-center gap-3 px-2 py-1 rounded transition-colors duration-150",
+                                    isCurrentPc
+                                        ? "bg-green-300 dark:bg-green-600/70 text-green-950 dark:text-green-50 font-semibold shadow-md"
+                                        : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                                )}
+                            >
+                                <span className={cn(
+                                    "w-10 text-right font-mono text-[10px]",
+                                    isCurrentPc ? "text-green-800 dark:text-green-100 font-bold" : "opacity-60"
+                                )}>
+                                    {op.pc}
                                 </span>
-                            )}
-                        </div>
-                    );
-                })}
+                                <span className={cn(
+                                    "font-mono font-medium",
+                                    isCurrentPc ? "text-green-900 dark:text-green-50" : "text-purple-600 dark:text-purple-400"
+                                )}>
+                                    {op.op}
+                                </span>
+                                {op.arg && (
+                                    <span className="text-gray-500 dark:text-gray-500 text-[10px] truncate max-w-[200px]" title={op.arg}>
+                                        {op.arg}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
-        </div>
         </div>
     );
 }

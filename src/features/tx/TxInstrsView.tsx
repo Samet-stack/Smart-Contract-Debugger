@@ -160,6 +160,15 @@ function InstructionBlock({ title, instr, showMemoryChanges = true }: Instructio
     );
 }
 
+/**
+ * Transaction Instructions View.
+ * Displays detailed information about the Last Run and Next Instruction.
+ * Includes:
+ * - Gas usage (Our Gas / Their Gas)
+ * - Instruction details (PC, Opcode, Gas Cost, Depth)
+ * - Memory changes (if any)
+ * - Call Data (Function Selector and raw data)
+ */
 export default function TxInstrsView({ data, className = "" }: TxInstrsViewProps) {
     const hasLast = Boolean(data.lastRunInstr);
     const hasNext = Boolean(data.nextInstrToRun);

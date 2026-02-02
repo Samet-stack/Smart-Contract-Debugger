@@ -1,4 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
+/**
+ * Theme Context Provider.
+ * Manages the application's light/dark mode preference.
+ * - Checks localStorage
+ * - Checks system preference (prefers-color-scheme)
+ * - Toggles 'dark' class on the HTML document root
+ */
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 

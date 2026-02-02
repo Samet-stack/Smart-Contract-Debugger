@@ -6,6 +6,11 @@ interface MemoryMappingsViewProps {
     className?: string; // Add className prop for flexibility
 }
 
+/**
+ * Memory Mappings View.
+ * Displays a list of memory mappings, showing which PC/Opcode mapped to which memory range.
+ * Useful for debugging how memory was allocated or modified.
+ */
 export default function MemoryMappingsView({ mappings, className = "" }: MemoryMappingsViewProps) {
     if (!mappings || mappings.length === 0) {
         return null;
