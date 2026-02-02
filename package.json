@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tailadmin-react": "file:../tailadmin-react-typescript-pro-2.0-main"
+    "tailadmin-react": "file:./vendor/tailadmin-react-typescript-pro-2.0-main"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

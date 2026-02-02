@@ -362,16 +362,6 @@ export default function App() {
           <div className="order-4 md:order-3 w-full md:w-auto md:flex-none flex-shrink-0 md:ml-auto flex items-center justify-start md:justify-end gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide pt-3 md:pt-0 border-t md:border-t-0 border-gray-100/50 dark:border-gray-800/50 md:border-none mt-1 md:mt-0">
 
 
-            {/* Console Trigger */}
-            <button
-              onClick={() => setIsConsoleOpen(true)}
-              className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors mr-1"
-              title="Open Console"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </button>
             <Button
               variant="outline"
               size="sm"
