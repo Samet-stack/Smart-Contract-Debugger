@@ -1,5 +1,7 @@
 # Apollo v2
 
+A debugger for EVM transactions.
+
 ## Installation
 
 ```bash
