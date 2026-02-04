@@ -50,8 +50,8 @@ function AccordionItem({
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                     <span className={`text-xs font-mono font-medium ${labelColor} shrink-0`}>{label}</span>
-                    <code className="text-sm font-mono text-gray-800 dark:text-gray-200 truncate">
-                        {value.length > 40 ? `${value.slice(0, 20)}...${value.slice(-16)}` : value}
+                    <code className="text-sm font-mono text-gray-800 dark:text-gray-200 truncate" title={value}>
+                        {value}
                     </code>
                 </div>
                 <span className="text-gray-400 text-xs shrink-0 ml-2">
@@ -135,8 +135,8 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                         {/* Previous item (Red) */}
                         {previous && (
                             <div className="grid grid-cols-[1fr_auto] bg-red-100 dark:bg-red-900/40 border-b border-red-200 dark:border-red-800/50 shrink-0">
-                                <div className="px-4 py-3">
-                                    <span className="text-gray-500 dark:text-gray-400 font-medium">prev : </span>
+                                <div className="px-4 py-3 min-w-0">
+                                    <span className="text-red-600 dark:text-red-400 font-medium text-xs">{previous.label || 'prev'}: </span>
                                     <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{previous.value}</span>
                                 </div>
                                 <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm text-center min-w-[100px] flex items-center justify-center">
@@ -148,8 +148,8 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                         {/* Current item (Green) */}
                         {current && (
                             <div className="grid grid-cols-[1fr_auto] bg-green-100 dark:bg-green-900/40 shrink-0">
-                                <div className="px-4 py-3">
-                                    <span className="text-gray-500 dark:text-gray-400 font-medium">curr : </span>
+                                <div className="px-4 py-3 min-w-0">
+                                    <span className="text-green-600 dark:text-green-400 font-medium text-xs">{current.label || 'curr'}: </span>
                                     <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{current.value}</span>
                                 </div>
                                 <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm text-center min-w-[100px] flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                     <div>
                         {current && (
                             <AccordionItem
-                                label="TOP"
+                                label={current.label || 'TOP'}
                                 value={current.value}
                                 detail={current.modifiedAt ? `${current.modifiedAt.pc}: ${current.modifiedAt.opcode}` : undefined}
                                 isHighlighted
@@ -184,7 +184,7 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                         {neutralItems.map((item, idx) => (
                             <AccordionItem
                                 key={idx}
-                                label={`[${idx + 1}]`}
+                                label={item?.label || `[${idx + 1}]`}
                                 value={item?.value || ''}
                                 detail={item?.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : undefined}
                             />

@@ -6,7 +6,9 @@ import type {
     stack as EngineStack,
     storage as EngineStorage,
     transient_storage as EngineTransientStorage,
-    instr
+    instr,
+    stack_input,
+    stack_output
 } from "../types/ApolloEngine";
 
 type LogMapLike = Map<number, log_infos> | { instr_map: Map<number, log_infos> } | undefined;
@@ -25,7 +27,53 @@ const getActualLogMap = (logMap: LogMapLike): Map<number, log_infos> | undefined
     return undefined;
 };
 
-/** Maps engine stack to UI StackItems. */
+/**
+ * Extracts semantic labels from stack_input.
+ * stack_input is a discriminated union like { ADD: { a: string; b: string } }.
+ * Returns an array of label names for the input arguments.
+ */
+export const extractInputLabels = (stackArgs: stack_input | undefined): string[] => {
+    if (!stackArgs || typeof stackArgs !== 'object') return [];
+
+    // Get the first key (the opcode name)
+    const keys = Object.keys(stackArgs);
+    if (keys.length === 0) return [];
+
+    const opKey = keys[0];
+    const args = (stackArgs as Record<string, unknown>)[opKey];
+
+    // Handle special cases
+    if (args === 0 || args === null || args === undefined) return [];
+    if (typeof args !== 'object') return [];
+
+    // Extract the argument names
+    return Object.keys(args as Record<string, unknown>);
+};
+
+/**
+ * Extracts semantic labels from stack_output.
+ * stack_output is a discriminated union like { ADD: { result: string } }.
+ * Returns an array of label names for the output values.
+ */
+export const extractOutputLabels = (stackOutput: stack_output | undefined): string[] => {
+    if (!stackOutput || typeof stackOutput !== 'object') return [];
+
+    const keys = Object.keys(stackOutput);
+    if (keys.length === 0) return [];
+
+    const opKey = keys[0];
+    const outputs = (stackOutput as Record<string, unknown>)[opKey];
+
+    // Handle special cases
+    if (outputs === 0 || outputs === null || outputs === undefined) return [];
+    if (typeof outputs !== 'object') return [];
+
+    return Object.keys(outputs as Record<string, unknown>);
+};
+
+
+
+/** Maps engine stack to UI StackItems with semantic labels. */
 export const mapStack = (engineStack: EngineStack, logMap?: LogMapLike): StackItem[] => {
     if (!engineStack || !Array.isArray(engineStack)) return [];
 
@@ -33,6 +81,8 @@ export const mapStack = (engineStack: EngineStack, logMap?: LogMapLike): StackIt
 
     return engineStack.map((item, index) => {
         let modifiedAt = { pc: 0, opcode: "GENESIS" };
+        let label = `stack[${index}]`; // Default label
+
         if (actualLogMap && item.log_id !== undefined) {
             const log = actualLogMap.get(item.log_id);
             if (log) {
@@ -40,13 +90,23 @@ export const mapStack = (engineStack: EngineStack, logMap?: LogMapLike): StackIt
                     pc: log.next_instr.pc,
                     opcode: log.next_instr.op
                 };
+
+                // Extract semantic label from the instruction that produced this value
+                const outputLabels = extractOutputLabels(log.next_instr.stack_output);
+                if (outputLabels.length > 0) {
+                    // Use the first output label (most instructions produce 1 value)
+                    label = outputLabels[0];
+                } else {
+                    // Fallback to opcode name for instructions like PUSH
+                    label = log.next_instr.op.toLowerCase();
+                }
             }
         }
 
         return {
             value: item.value,
-            label: `stack[${index}]`,
-            status: "neutral",
+            label,
+            status: "neutral" as const,
             modifiedAt
         };
     });

@@ -9,7 +9,7 @@ install-deps:
 # Build the project for deployment (Production)
 # Sets the API URL to the production endpoint
 build:
-	VITE_API_URL=https://app.functori.com/reth npm run build
+	npm run build
 
 # Run the project locally (Development)
 run-local:

@@ -9,6 +9,8 @@ interface ContractViewerProps {
     currentPc: number | undefined;
     isExternalContract?: boolean;
     externalAddress?: string;
+    visitedPcs?: Set<number>;
+    pcExecutionCount?: Map<number, number>;
 }
 
 /**
@@ -17,7 +19,7 @@ interface ContractViewerProps {
  * Highlights the current program counter (PC) and handles scrolling.
  * Supports displaying external contract info if available.
  */
-export default function ContractViewer({ code, currentPc, isExternalContract, externalAddress }: ContractViewerProps) {
+export default function ContractViewer({ code, currentPc, isExternalContract, externalAddress, visitedPcs, pcExecutionCount }: ContractViewerProps) {
     const activeRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const { findAlias } = useAliases();
@@ -81,6 +83,8 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                 <div className="space-y-0.5">
                     {code.map((op, index) => {
                         const isCurrentPc = currentPc === op.pc;
+                        const isVisited = visitedPcs?.has(op.pc) ?? false;
+                        const execCount = pcExecutionCount?.get(op.pc) ?? 0;
                         return (
                             <div
                                 key={index}
@@ -88,25 +92,32 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                                 className={cn(
                                     "flex items-center gap-3 px-2 py-1 rounded transition-colors duration-150",
                                     isCurrentPc
-                                        ? "bg-green-300 dark:bg-green-600/70 text-green-950 dark:text-green-50 font-semibold shadow-md"
-                                        : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+                                        ? "bg-green-400 dark:bg-green-600/80 text-green-950 dark:text-green-50 font-semibold shadow-md"
+                                        : isVisited
+                                            ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                                            : "hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
                                 )}
                             >
                                 <span className={cn(
                                     "w-10 text-right font-mono text-[10px]",
-                                    isCurrentPc ? "text-green-800 dark:text-green-100 font-bold" : "opacity-60"
+                                    isCurrentPc ? "text-green-800 dark:text-green-100 font-bold" : isVisited ? "text-green-600 dark:text-green-400" : "opacity-60"
                                 )}>
                                     {op.pc}
                                 </span>
                                 <span className={cn(
                                     "font-mono font-medium",
-                                    isCurrentPc ? "text-green-900 dark:text-green-50" : "text-purple-600 dark:text-purple-400"
+                                    isCurrentPc ? "text-green-900 dark:text-green-50" : isVisited ? "text-green-700 dark:text-green-300" : "text-purple-600 dark:text-purple-400"
                                 )}>
                                     {op.op}
                                 </span>
                                 {op.arg && (
                                     <span className="text-gray-500 dark:text-gray-500 text-[10px] truncate max-w-[200px]" title={op.arg}>
                                         {op.arg}
+                                    </span>
+                                )}
+                                {execCount > 1 && (
+                                    <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                                        ×{execCount}
                                     </span>
                                 )}
                             </div>

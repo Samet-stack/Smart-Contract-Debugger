@@ -8,7 +8,6 @@ import TxInstrsView from "./features/tx/TxInstrsView";
 import CallContextView from "./features/tx/CallContextView";
 
 import type { MemorySegment } from "./types/MemorySegment";
-import type { StackItem } from "./types/StackItem";
 import type { TxInstrs } from "./types/TxInstrs";
 import type { Breakpoint } from "./types/ApolloAPI";
 import InstructionFilters from "./features/filters/InstructionFilters";
@@ -92,6 +91,10 @@ export default function App() {
     // Skip Contract
     skipContract,
     setSkipContract,
+
+    // NEW: Execution tracking
+    visitedPcs,
+    pcExecutionCount,
 
   } = useApollo();
 
@@ -422,6 +425,8 @@ export default function App() {
                   currentPc={rawState?.nextInstruction?.pc}
                   isExternalContract={isExternalContract}
                   externalAddress={address}
+                  visitedPcs={visitedPcs}
+                  pcExecutionCount={pcExecutionCount}
                 />
               </Card>
             </div>
@@ -524,33 +529,13 @@ export default function App() {
                 visibleStack={visibleStack}
                 fullHistory={stackHistory}
                 neutralItems={(() => {
-                  try {
-                    // Smart Slice Calculation for Neutral Items (Rest of Stack)
-                    // Depends on visibleStack.previous (Red item)
-                    const prevVal = visibleStack?.previous?.value;
-                    let sliceIndex = 1;
-
-                    // Safety check on stack
-                    if (!stack || !Array.isArray(stack)) return [];
-
-                    // Check for duplicate of Red item
-                    if (stack.length > 1 && prevVal && stack[1]?.value === prevVal) {
-                      sliceIndex = 2;
-                    }
-
-                    // Return slice of raw stack
-                    return stack.slice(sliceIndex).map((item, index) => {
-                      if (!item) return null;
-                      return {
-                        ...item,
-                        label: item.label || `stack[${index + sliceIndex}]`,
-                        status: 'neutral' as const
-                      };
-                    }).filter(Boolean) as StackItem[];
-                  } catch (err) {
-                    console.error("Error calculating neutralItems:", err);
-                    return [];
-                  }
+                  if (!stack || !Array.isArray(stack) || stack.length <= 1) return [];
+                  // Just return the rest of the stack (everything after top)
+                  return stack.slice(1).map((item, index) => ({
+                    ...item,
+                    label: item.label || `stack[${index + 1}]`,
+                    status: 'neutral' as const
+                  }));
                 })()}
                 className="max-h-64"
               />

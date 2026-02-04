@@ -81,6 +81,10 @@ export const useApollo = () => {
     const [breakpoints, setBreakpoints] = useState<Breakpoint[]>([]);
     const [skipContract, setSkipContract] = useState(false);
 
+    // 6.7. Execution tracking for ContractViewer
+    const [visitedPcs, setVisitedPcs] = useState<Set<number>>(new Set());
+    const [pcExecutionCount, setPcExecutionCount] = useState<Map<number, number>>(new Map());
+
 
 
     // Refs for persistence tracking
@@ -240,6 +244,19 @@ export const useApollo = () => {
         // Build full memory mappings (like old Apollo - shows ALL memory regions and who wrote them)
         setFullMemoryMappings(buildFullMemoryMappings(log.exec_state.memory?.log_ids, logMap));
 
+        // Update visited PCs and execution count
+        const currentPc = log.next_instr.pc;
+        setVisitedPcs(prev => {
+            const next = new Set(prev);
+            next.add(currentPc);
+            return next;
+        });
+        setPcExecutionCount(prev => {
+            const next = new Map(prev);
+            next.set(currentPc, (next.get(currentPc) || 0) + 1);
+            return next;
+        });
+
         // Next instruction is derived from current log (next_instr).
     }, [mapLogToInstruction]);
 
@@ -267,6 +284,8 @@ export const useApollo = () => {
         setBreakpoints([]);
         lastStepRef.current = -1;
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
+        setVisitedPcs(new Set()); // Reset visited PCs
+        setPcExecutionCount(new Map()); // Reset execution counts
 
         try {
             if (typeof Apollo === 'undefined') {
@@ -762,6 +781,8 @@ export const useApollo = () => {
 
         // NEW: Contract Code
         contractCode,
+        visitedPcs,
+        pcExecutionCount,
 
         // NEW: Transaction Details
         transactionDetails,
