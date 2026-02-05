@@ -378,7 +378,8 @@ export const useApollo = () => {
     useEffect(() => {
         const currentStep = state?.currentStep ?? -1;
         const stackArr = state?.stack || [];
-        const latestItem = stackArr[stackArr.length - 1];
+        // Engine stack is top-first (index 0). Track the top value across steps.
+        const latestItem = stackArr[0];
 
         // Ensure we have a valid state step
         if (currentStep === -1 || lastStepRef.current === -1) {
