@@ -1,5 +1,5 @@
 // StackView.tsx
-// Stack visualization with 3 tabs: Value (curr/prev), Full Stack (accordion), History (accordion)
+// Stack visualization with 3 tabs: Value (consumed/produced), Full Stack (accordion), History (accordion)
 
 import { useState } from "react";
 import type { VisibleStackWindow } from "../../hooks/useApollo";
@@ -83,20 +83,19 @@ function AccordionItem({
 
 /**
  * Stack View Component.
- * Displays the current EVM stack.
+ * Displays the current EVM stack with realistic argument consumption.
  * Highlights:
- * - Produced items (Green)
- * - Consumed items (Red)
- * - Neutral items (Gray)
- * Supports visualizing the stack growing/shrinking during execution.
+ * - Produced items (Green) — values the last instruction pushed
+ * - Consumed items (Red) — values the last instruction popped
+ * - Neutral items (Gray) — rest of the stack
  */
 export default function StackView({ visibleStack, fullHistory = [], neutralItems = [], className = "" }: StackViewProps) {
     const [activeTab, setActiveTab] = useState<TabType>('value');
-    const { current, previous } = visibleStack || { current: null, previous: null };
+    const { produced, consumed } = visibleStack || { produced: [], consumed: [] };
 
     const tabs: { key: TabType; label: string; count?: number }[] = [
-        { key: 'value', label: 'Value' },
-        { key: 'fullStack', label: 'Full Stack', count: (current ? 1 : 0) + neutralItems.length },
+        { key: 'value', label: 'Value', count: produced.length + consumed.length },
+        { key: 'fullStack', label: 'Full Stack', count: produced.length + neutralItems.length },
         { key: 'history', label: 'History', count: fullHistory.length }
     ];
 
@@ -132,34 +131,34 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                             <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center min-w-[100px]">PC: OP</div>
                         </div>
 
-                        {/* Previous item (Red) */}
-                        {previous && (
-                            <div className="grid grid-cols-[1fr_auto] bg-red-100 dark:bg-red-900/40 border-b border-red-200 dark:border-red-800/50 shrink-0">
+                        {/* Consumed items (Red) — all arguments the last instruction popped */}
+                        {consumed.map((item, idx) => (
+                            <div key={`consumed-${idx}`} className="grid grid-cols-[1fr_auto] bg-red-100 dark:bg-red-900/40 border-b border-red-200 dark:border-red-800/50 shrink-0">
                                 <div className="px-4 py-3 min-w-0">
-                                    <span className="text-red-600 dark:text-red-400 font-medium text-xs">{previous.label || 'prev'}: </span>
-                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{previous.value}</span>
+                                    <span className="text-red-600 dark:text-red-400 font-medium text-xs">{item.label || 'arg'}: </span>
+                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{item.value}</span>
                                 </div>
                                 <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm text-center min-w-[100px] flex items-center justify-center">
-                                    {previous.modifiedAt ? `${previous.modifiedAt.pc}: ${previous.modifiedAt.opcode}` : "-"}
+                                    {item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : "-"}
                                 </div>
                             </div>
-                        )}
+                        ))}
 
-                        {/* Current item (Green) */}
-                        {current && (
-                            <div className="grid grid-cols-[1fr_auto] bg-green-100 dark:bg-green-900/40 shrink-0">
+                        {/* Produced items (Green) — all values the last instruction pushed */}
+                        {produced.map((item, idx) => (
+                            <div key={`produced-${idx}`} className="grid grid-cols-[1fr_auto] bg-green-100 dark:bg-green-900/40 border-b border-green-200 dark:border-green-800/50 shrink-0">
                                 <div className="px-4 py-3 min-w-0">
-                                    <span className="text-green-600 dark:text-green-400 font-medium text-xs">{current.label || 'curr'}: </span>
-                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{current.value}</span>
+                                    <span className="text-green-600 dark:text-green-400 font-medium text-xs">{item.label || 'result'}: </span>
+                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{item.value}</span>
                                 </div>
                                 <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm text-center min-w-[100px] flex items-center justify-center">
-                                    {current.modifiedAt ? `${current.modifiedAt.pc}: ${current.modifiedAt.opcode}` : "-"}
+                                    {item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : "-"}
                                 </div>
                             </div>
-                        )}
+                        ))}
 
                         {/* Empty state */}
-                        {!current && !previous && (
+                        {produced.length === 0 && consumed.length === 0 && (
                             <div className="px-4 py-6 text-center text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 flex-1 flex items-center justify-center">
                                 No stack data
                             </div>
@@ -172,15 +171,16 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                 {/* === FULL STACK TAB === */}
                 {activeTab === 'fullStack' && (
                     <div>
-                        {current && (
+                        {produced.map((item, idx) => (
                             <AccordionItem
-                                label={current.label || 'TOP'}
-                                value={current.value}
-                                detail={current.modifiedAt ? `${current.modifiedAt.pc}: ${current.modifiedAt.opcode}` : undefined}
+                                key={`produced-${idx}`}
+                                label={item.label || 'TOP'}
+                                value={item.value}
+                                detail={item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : undefined}
                                 isHighlighted
                                 highlightColor="green"
                             />
-                        )}
+                        ))}
                         {neutralItems.map((item, idx) => (
                             <AccordionItem
                                 key={idx}
@@ -189,7 +189,7 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                                 detail={item?.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : undefined}
                             />
                         ))}
-                        {!current && neutralItems.length === 0 && (
+                        {produced.length === 0 && neutralItems.length === 0 && (
                             <div className="px-4 py-6 text-center text-gray-500 italic">
                                 Stack is empty
                             </div>

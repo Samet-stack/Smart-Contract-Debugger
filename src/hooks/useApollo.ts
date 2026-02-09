@@ -10,7 +10,9 @@ import {
     mapContractCode,
     bufferToHex,
     buildFullMemoryMappings,
-    mapLogToState
+    mapLogToState,
+    extractConsumedItems,
+    extractProducedItems
 } from './apolloMappers';
 
 export type { ContractOpcode } from './apolloMappers';
@@ -19,8 +21,8 @@ export type ApolloStatus = "Ready" | "Loading" | "Error";
 
 // Type for the visible stack window
 export interface VisibleStackWindow {
-    current: StackItem | null;  // Green - current step
-    previous: StackItem | null; // Red - previous step
+    produced: StackItem[];  // Green - values produced by last instruction
+    consumed: StackItem[];  // Red - values consumed by last instruction
 }
 
 // Type for transaction info exposed to UI
@@ -658,14 +660,21 @@ export const useApollo = () => {
     }, []);
 
 
-    // 12. Computed Data
+    // 12. Computed Data — use real stack_args/stack_output from the engine
     const visibleStack: VisibleStackWindow = useMemo(() => {
-        const len = stackHistory.length;
-        return {
-            current: len > 0 ? { ...stackHistory[len - 1], status: 'produced' as const } : null,
-            previous: len > 1 ? { ...stackHistory[len - 2], status: 'consumed' as const } : null
-        };
-    }, [stackHistory]);
+        // prevLogData = the log of the instruction that JUST ran
+        // Its next_instr.stack_args = what it consumed, stack_output = what it produced
+        if (!prevLogData) {
+            // Step 0: no previous instruction yet, nothing consumed/produced
+            return { produced: [], consumed: [] };
+        }
+
+        const lastInstr = prevLogData.next_instr;
+        const consumed = extractConsumedItems(lastInstr.stack_args, lastInstr.pc, lastInstr.op);
+        const produced = extractProducedItems(lastInstr.stack_output, lastInstr.pc, lastInstr.op);
+
+        return { produced, consumed };
+    }, [prevLogData]);
 
     // 13. Auto-Play Logic
     const [isPlaying, setIsPlaying] = useState<false | 'forward' | 'backward'>(false);

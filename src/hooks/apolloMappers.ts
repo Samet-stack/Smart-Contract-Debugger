@@ -71,6 +71,62 @@ export const extractOutputLabels = (stackOutput: stack_output | undefined): stri
     return Object.keys(outputs as Record<string, unknown>);
 };
 
+/**
+ * Extracts consumed StackItems from stack_input.
+ * Returns an array of StackItem with the label and value of each consumed argument.
+ */
+export const extractConsumedItems = (
+    stackArgs: stack_input | undefined,
+    pc: number,
+    opcode: string
+): StackItem[] => {
+    if (!stackArgs || typeof stackArgs !== 'object') return [];
+
+    const keys = Object.keys(stackArgs);
+    if (keys.length === 0) return [];
+
+    const opKey = keys[0];
+    const args = (stackArgs as Record<string, unknown>)[opKey];
+
+    if (args === 0 || args === null || args === undefined) return [];
+    if (typeof args !== 'object') return [];
+
+    return Object.entries(args as Record<string, string>).map(([label, value]) => ({
+        value,
+        label,
+        status: 'consumed' as const,
+        modifiedAt: { pc, opcode }
+    }));
+};
+
+/**
+ * Extracts produced StackItems from stack_output.
+ * Returns an array of StackItem with the label and value of each produced output.
+ */
+export const extractProducedItems = (
+    stackOutput: stack_output | undefined,
+    pc: number,
+    opcode: string
+): StackItem[] => {
+    if (!stackOutput || typeof stackOutput !== 'object') return [];
+
+    const keys = Object.keys(stackOutput);
+    if (keys.length === 0) return [];
+
+    const opKey = keys[0];
+    const outputs = (stackOutput as Record<string, unknown>)[opKey];
+
+    if (outputs === 0 || outputs === null || outputs === undefined) return [];
+    if (typeof outputs !== 'object') return [];
+
+    return Object.entries(outputs as Record<string, string>).map(([label, value]) => ({
+        value,
+        label,
+        status: 'produced' as const,
+        modifiedAt: { pc, opcode }
+    }));
+};
+
 
 
 /** Maps engine stack to UI StackItems with semantic labels. */
