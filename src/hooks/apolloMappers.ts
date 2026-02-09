@@ -86,6 +86,10 @@ export const extractConsumedItems = (
     if (keys.length === 0) return [];
 
     const opKey = keys[0];
+
+    // DUP peeks without popping — suppress consumed display
+    if (opKey.startsWith('DUP')) return [];
+
     const args = (stackArgs as Record<string, unknown>)[opKey];
 
     if (args === 0 || args === null || args === undefined) return [];

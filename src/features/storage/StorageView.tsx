@@ -59,7 +59,7 @@ export default function StorageView({ items, className = "" }: StorageViewProps)
                                 {item.modifiedAt ? (
                                     <>
                                         <span className="font-mono mr-2">{item.modifiedAt.pc}</span>
-                                        <span className="text-gray-500">{item.modifiedAt.opcode}</span>
+                                        <span className="text-gray-500 dark:text-gray-400">{item.modifiedAt.opcode}</span>
                                     </>
                                 ) : (
                                     <span className="text-gray-400">-</span>

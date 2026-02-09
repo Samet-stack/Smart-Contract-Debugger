@@ -21,38 +21,20 @@ interface ContractViewerProps {
  */
 export default function ContractViewer({ code, currentPc, isExternalContract, externalAddress, visitedPcs, pcExecutionCount }: ContractViewerProps) {
     const activeRef = useRef<HTMLDivElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
     const { findAlias } = useAliases();
     const aliasLabel = externalAddress ? findAlias(externalAddress)?.label : undefined;
     const shortAddress = externalAddress
         ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}`
         : "unknown";
 
-    // P1 FIX: Improved auto-scroll that works reliably in both directions
+    // Single smooth scroll to keep active line centered — no jitter
     useEffect(() => {
-        if (activeRef.current && containerRef.current) {
-            const element = activeRef.current;
-            
-            // Use scrollIntoView with 'nearest' to keep element visible without unnecessary scrolling
-            // 'smooth' behavior for better UX, but ensure it happens even in fast navigation
-            element.scrollIntoView({
+        if (activeRef.current) {
+            activeRef.current.scrollIntoView({
                 behavior: 'smooth',
-                block: 'nearest',
+                block: 'center',
                 inline: 'nearest'
             });
-            
-            // Fallback: force scroll after a short delay to ensure visibility in rapid navigation
-            const timeoutId = setTimeout(() => {
-                if (activeRef.current) {
-                    activeRef.current.scrollIntoView({
-                        behavior: 'auto',
-                        block: 'center',
-                        inline: 'nearest'
-                    });
-                }
-            }, 100);
-            
-            return () => clearTimeout(timeoutId);
         }
     }, [currentPc]);
 
@@ -84,7 +66,6 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                 </div>
             )}
             <div
-                ref={containerRef}
                 className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed"
             >
                 <div className="space-y-0.5">
@@ -107,7 +88,7 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                             >
                                 <span className={cn(
                                     "w-10 text-right font-mono text-[10px]",
-                                    isCurrentPc ? "text-green-800 dark:text-green-100 font-bold" : isVisited ? "text-green-600 dark:text-green-400" : "opacity-60"
+                                    isCurrentPc ? "text-green-950 dark:text-green-100 font-bold" : isVisited ? "text-green-600 dark:text-green-400" : "opacity-60"
                                 )}>
                                     {op.pc}
                                 </span>
@@ -120,9 +101,8 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                                 {op.arg && (
                                     <span className={cn(
                                         "text-[10px] truncate max-w-[200px]",
-                                        // P1 FIX: Better contrast for PUSH arguments on active line
-                                        isCurrentPc 
-                                            ? "text-green-100 dark:text-green-100" 
+                                        isCurrentPc
+                                            ? "text-green-950 dark:text-green-100"
                                             : "text-gray-500 dark:text-gray-400"
                                     )} title={op.arg}>
                                         {op.arg}

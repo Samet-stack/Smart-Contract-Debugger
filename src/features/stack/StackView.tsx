@@ -142,16 +142,16 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                 {/* === CHANGES TAB (formerly Value) === */}
                 {activeTab === 'value' && (
                     <div className="flex flex-col h-full">
-                        {/* P2 FIX: Legend explaining the semantics */}
-                        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 text-[10px] text-blue-700 dark:text-blue-300">
-                            <span className="font-semibold">Last instruction effect:</span>
-                            <span className="ml-1">🔴 = popped (consumed)</span>
-                            <span className="ml-2">🟢 = pushed (produced)</span>
-                            <span className="ml-2 text-blue-600 dark:text-blue-400 italic">
-                                {consumed.length === 0 && produced.length === 0 && '(no stack change - e.g., JUMP, SWAP)'}
-                                {consumed.length > 0 && produced.length === 0 && '(consumed only - e.g., JUMPI, POP)'}
-                                {consumed.length === 0 && produced.length > 0 && '(produced only - e.g., PUSH, DUP)'}
-                                {consumed.length > 0 && produced.length > 0 && '(replaced values - e.g., ADD, MUL)'}
+                        {/* Compact legend */}
+                        <div className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 border-b border-blue-100 dark:border-blue-800 text-[10px] text-blue-800 dark:text-blue-200 flex items-center gap-2 flex-wrap">
+                            <span className="text-red-500">popped</span>
+                            <span className="text-gray-400">/</span>
+                            <span className="text-green-600 dark:text-green-400">pushed</span>
+                            <span className="text-blue-600 dark:text-blue-400 italic ml-auto">
+                                {consumed.length === 0 && produced.length === 0 && 'no stack change'}
+                                {consumed.length > 0 && produced.length === 0 && 'consumed only'}
+                                {consumed.length === 0 && produced.length > 0 && 'produced only'}
+                                {consumed.length > 0 && produced.length > 0 && 'replaced values'}
                             </span>
                         </div>
                         {/* Header Row */}
@@ -190,8 +190,8 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
 
                         {/* Empty state */}
                         {produced.length === 0 && consumed.length === 0 && (
-                            <div className="px-4 py-6 text-center text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 flex-1 flex items-center justify-center">
-                                No stack data
+                            <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/50 flex-1 flex items-center justify-center">
+                                No changes yet
                             </div>
                         )}
 

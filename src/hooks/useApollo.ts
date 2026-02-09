@@ -84,8 +84,9 @@ export const useApollo = () => {
     const [skipContract, setSkipContract] = useState(false);
 
     // 6.7. Execution tracking for ContractViewer
-    // P0 FIX: Store execution path as array indexed by step for proper backward navigation
-    const [executionPath, setExecutionPath] = useState<number[]>([]); // executionPath[stepIndex] = pc
+    // Ref for O(1) in-place mutation, version counter to trigger useMemo consumers
+    const executionPathRef = useRef<number[]>([]);
+    const [executionPathVersion, setExecutionPathVersion] = useState(0);
 
 
 
@@ -163,20 +164,14 @@ export const useApollo = () => {
 
         currentLogRef.current = log;
 
-        // P0 FIX: Use stored previous log from ref instead of peeking
-        // This ensures consistency when navigating backward/forward
+        // Always peek via iterator for the true previous log.
+        // This is correct for both forward AND backward navigation.
         let prevLog: log_infos | null = null;
-        if (stepIndex > 0) {
-            // Try to get from our stored ref first (more reliable)
-            prevLog = prevLogDataRef.current;
-        }
-        
-        // Fallback to peek only if needed (initial load)
-        if (!prevLog && iter && stepIndex > 0) {
+        if (stepIndex > 0 && iter) {
             const hasPrev = iter.prev();
             if (hasPrev) {
                 prevLog = iter.current_log() || null;
-                iter.next(); // Rewind back to current position
+                iter.next(); // Restore iterator to current position
             }
         }
 
@@ -253,25 +248,19 @@ export const useApollo = () => {
         // Build full memory mappings (like old Apollo - shows ALL memory regions and who wrote them)
         setFullMemoryMappings(buildFullMemoryMappings(log.exec_state.memory?.log_ids, logMap));
 
-        // P0 FIX: Track execution path for proper backward/forward navigation
+        // Track execution path — O(1) in-place mutation via ref
         const currentPc = log.next_instr.pc;
-        setExecutionPath(prev => {
-            // If we're at a new step, extend the path
-            if (stepIndex >= prev.length) {
-                return [...prev, currentPc];
-            }
-            // If we're going backward or revisiting, truncate and extend
-            return [...prev.slice(0, stepIndex), currentPc];
-        });
-        
-        // P0 FIX: Execution count is now computed dynamically from executionPath
-        // in the computedPcExecutionCount useMemo below
-
-        // Store current log as previous for next step
-        prevLogDataRef.current = log;
+        const path = executionPathRef.current;
+        if (stepIndex >= path.length) {
+            path.push(currentPc);
+        } else {
+            path.length = stepIndex;
+            path.push(currentPc);
+        }
+        setExecutionPathVersion(v => v + 1);
 
         // Next instruction is derived from current log (next_instr).
-    }, [mapLogToInstruction, executionPath]);
+    }, [mapLogToInstruction]);
 
     // ---------------------------------------------------------------------------
     // 9. Initialization
@@ -297,7 +286,8 @@ export const useApollo = () => {
         setBreakpoints([]);
         lastStepRef.current = -1;
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
-        setExecutionPath([]); // P0 FIX: Reset execution path
+        executionPathRef.current = [];
+        setExecutionPathVersion(0);
         prevLogDataRef.current = null;
 
         try {
@@ -772,22 +762,28 @@ export const useApollo = () => {
 
     const derivedNextInstruction = nextInstruction;
 
-    // P0 FIX: Compute visited PCs from execution path for proper backward navigation
+    // Derive visitedPcs from ref — recalculates when version bumps or step changes
     const visitedPcs = useMemo(() => {
-        // Only consider PCs up to current step index
-        const currentPath = executionPath.slice(0, currentStepIndex + 1);
-        return new Set(currentPath);
-    }, [executionPath, currentStepIndex]);
+        const path = executionPathRef.current;
+        const limit = Math.min(path.length, currentStepIndex + 1);
+        const set = new Set<number>();
+        for (let i = 0; i < limit; i++) set.add(path[i]);
+        return set;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [executionPathVersion, currentStepIndex]);
 
-    // P0 FIX: Compute execution count from execution path for consistency
+    // Derive execution counts from ref
     const computedPcExecutionCount = useMemo(() => {
+        const path = executionPathRef.current;
+        const limit = Math.min(path.length, currentStepIndex + 1);
         const counts = new Map<number, number>();
-        const currentPath = executionPath.slice(0, currentStepIndex + 1);
-        currentPath.forEach(pc => {
+        for (let i = 0; i < limit; i++) {
+            const pc = path[i];
             counts.set(pc, (counts.get(pc) || 0) + 1);
-        });
+        }
         return counts;
-    }, [executionPath, currentStepIndex]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [executionPathVersion, currentStepIndex]);
 
     return {
         // Load
