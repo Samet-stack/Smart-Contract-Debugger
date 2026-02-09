@@ -28,24 +28,31 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
         ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}`
         : "unknown";
 
-    // Auto-scroll to active element whenever currentPc changes
+    // P1 FIX: Improved auto-scroll that works reliably in both directions
     useEffect(() => {
         if (activeRef.current && containerRef.current) {
-            const container = containerRef.current;
             const element = activeRef.current;
-
-            const elementTop = element.offsetTop;
-            const elementHeight = element.offsetHeight;
-            const containerTop = container.scrollTop;
-            const containerHeight = container.offsetHeight;
-
-            // If element is out of view (above or below), scroll to it centered
-            if (elementTop < containerTop || elementTop + elementHeight > containerTop + containerHeight) {
-                container.scrollTo({
-                    top: elementTop - containerHeight / 2 + elementHeight / 2,
-                    behavior: "smooth"
-                });
-            }
+            
+            // Use scrollIntoView with 'nearest' to keep element visible without unnecessary scrolling
+            // 'smooth' behavior for better UX, but ensure it happens even in fast navigation
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'nearest'
+            });
+            
+            // Fallback: force scroll after a short delay to ensure visibility in rapid navigation
+            const timeoutId = setTimeout(() => {
+                if (activeRef.current) {
+                    activeRef.current.scrollIntoView({
+                        behavior: 'auto',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }, 100);
+            
+            return () => clearTimeout(timeoutId);
         }
     }, [currentPc]);
 
@@ -111,7 +118,13 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                                     {op.op}
                                 </span>
                                 {op.arg && (
-                                    <span className="text-gray-500 dark:text-gray-500 text-[10px] truncate max-w-[200px]" title={op.arg}>
+                                    <span className={cn(
+                                        "text-[10px] truncate max-w-[200px]",
+                                        // P1 FIX: Better contrast for PUSH arguments on active line
+                                        isCurrentPc 
+                                            ? "text-green-100 dark:text-green-100" 
+                                            : "text-gray-500 dark:text-gray-400"
+                                    )} title={op.arg}>
                                         {op.arg}
                                     </span>
                                 )}

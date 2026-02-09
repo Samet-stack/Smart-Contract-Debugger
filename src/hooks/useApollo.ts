@@ -84,8 +84,8 @@ export const useApollo = () => {
     const [skipContract, setSkipContract] = useState(false);
 
     // 6.7. Execution tracking for ContractViewer
-    const [visitedPcs, setVisitedPcs] = useState<Set<number>>(new Set());
-    const [pcExecutionCount, setPcExecutionCount] = useState<Map<number, number>>(new Map());
+    // P0 FIX: Store execution path as array indexed by step for proper backward navigation
+    const [executionPath, setExecutionPath] = useState<number[]>([]); // executionPath[stepIndex] = pc
 
 
 
@@ -101,7 +101,9 @@ export const useApollo = () => {
     const currentLogRef = useRef<log_infos | null>(null);
     const isProcessingRef = useRef(false);
 
-    // 8.5. Previous instruction log (from peek backward) - for LAST_RUN_INSTR
+    // 8.5. Previous instruction log - for LAST_RUN_INSTR and stack visualization
+    // We track previous log by storing the log from stepIndex - 1
+    const prevLogDataRef = useRef<log_infos | null>(null);
     const [prevLogData, setPrevLogData] = useState<log_infos | null>(null);
     const [nextInstruction, setNextInstruction] = useState<InstructionInfo | null>(null);
 
@@ -161,11 +163,16 @@ export const useApollo = () => {
 
         currentLogRef.current = log;
 
-        // PEEK BACKWARD: Get the PREVIOUS instruction (what just ran)
-        // Because log.next_instr is the instruction ABOUT to run,
-        // to show "LAST_RUN_INSTR" we need the previous step's next_instr
+        // P0 FIX: Use stored previous log from ref instead of peeking
+        // This ensures consistency when navigating backward/forward
         let prevLog: log_infos | null = null;
-        if (iter && stepIndex > 0) {
+        if (stepIndex > 0) {
+            // Try to get from our stored ref first (more reliable)
+            prevLog = prevLogDataRef.current;
+        }
+        
+        // Fallback to peek only if needed (initial load)
+        if (!prevLog && iter && stepIndex > 0) {
             const hasPrev = iter.prev();
             if (hasPrev) {
                 prevLog = iter.current_log() || null;
@@ -246,21 +253,25 @@ export const useApollo = () => {
         // Build full memory mappings (like old Apollo - shows ALL memory regions and who wrote them)
         setFullMemoryMappings(buildFullMemoryMappings(log.exec_state.memory?.log_ids, logMap));
 
-        // Update visited PCs and execution count
+        // P0 FIX: Track execution path for proper backward/forward navigation
         const currentPc = log.next_instr.pc;
-        setVisitedPcs(prev => {
-            const next = new Set(prev);
-            next.add(currentPc);
-            return next;
+        setExecutionPath(prev => {
+            // If we're at a new step, extend the path
+            if (stepIndex >= prev.length) {
+                return [...prev, currentPc];
+            }
+            // If we're going backward or revisiting, truncate and extend
+            return [...prev.slice(0, stepIndex), currentPc];
         });
-        setPcExecutionCount(prev => {
-            const next = new Map(prev);
-            next.set(currentPc, (next.get(currentPc) || 0) + 1);
-            return next;
-        });
+        
+        // P0 FIX: Execution count is now computed dynamically from executionPath
+        // in the computedPcExecutionCount useMemo below
+
+        // Store current log as previous for next step
+        prevLogDataRef.current = log;
 
         // Next instruction is derived from current log (next_instr).
-    }, [mapLogToInstruction]);
+    }, [mapLogToInstruction, executionPath]);
 
     // ---------------------------------------------------------------------------
     // 9. Initialization
@@ -286,8 +297,8 @@ export const useApollo = () => {
         setBreakpoints([]);
         lastStepRef.current = -1;
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
-        setVisitedPcs(new Set()); // Reset visited PCs
-        setPcExecutionCount(new Map()); // Reset execution counts
+        setExecutionPath([]); // P0 FIX: Reset execution path
+        prevLogDataRef.current = null;
 
         try {
             if (typeof Apollo === 'undefined') {
@@ -761,6 +772,23 @@ export const useApollo = () => {
 
     const derivedNextInstruction = nextInstruction;
 
+    // P0 FIX: Compute visited PCs from execution path for proper backward navigation
+    const visitedPcs = useMemo(() => {
+        // Only consider PCs up to current step index
+        const currentPath = executionPath.slice(0, currentStepIndex + 1);
+        return new Set(currentPath);
+    }, [executionPath, currentStepIndex]);
+
+    // P0 FIX: Compute execution count from execution path for consistency
+    const computedPcExecutionCount = useMemo(() => {
+        const counts = new Map<number, number>();
+        const currentPath = executionPath.slice(0, currentStepIndex + 1);
+        currentPath.forEach(pc => {
+            counts.set(pc, (counts.get(pc) || 0) + 1);
+        });
+        return counts;
+    }, [executionPath, currentStepIndex]);
+
     return {
         // Load
         loadTransaction,
@@ -792,7 +820,7 @@ export const useApollo = () => {
         // NEW: Contract Code
         contractCode,
         visitedPcs,
-        pcExecutionCount,
+        pcExecutionCount: computedPcExecutionCount,
 
         // NEW: Transaction Details
         transactionDetails,

@@ -93,20 +93,37 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
     const [activeTab, setActiveTab] = useState<TabType>('value');
     const { produced, consumed } = visibleStack || { produced: [], consumed: [] };
 
-    const tabs: { key: TabType; label: string; count?: number }[] = [
-        { key: 'value', label: 'Value', count: produced.length + consumed.length },
-        { key: 'fullStack', label: 'Full Stack', count: produced.length + neutralItems.length },
-        { key: 'history', label: 'History', count: fullHistory.length }
+    // P2 FIX: Clearer tab labels with tooltips explaining what each tab shows
+    const tabs: { key: TabType; label: string; count?: number; description: string }[] = [
+        { 
+            key: 'value', 
+            label: 'Changes', 
+            count: produced.length + consumed.length,
+            description: 'What the last instruction consumed (red) vs produced (green)'
+        },
+        { 
+            key: 'fullStack', 
+            label: 'Full Stack', 
+            count: produced.length + neutralItems.length,
+            description: 'Complete stack state with current values highlighted'
+        },
+        { 
+            key: 'history', 
+            label: 'History', 
+            count: fullHistory.length,
+            description: 'Timeline of all stack modifications'
+        }
     ];
 
     return (
         <div className={`rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 ${className} flex flex-col h-full`}>
-            {/* Tabs Header */}
+            {/* Tabs Header with tooltips */}
             <div className="flex bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
                 {tabs.map(tab => (
                     <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
+                        title={tab.description}
                         className={`flex-1 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 ${activeTab === tab.key
                             ? 'text-brand-600 dark:text-brand-400 border-brand-500 bg-white dark:bg-gray-900'
                             : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
@@ -122,12 +139,26 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto min-h-0">
-                {/* === VALUE TAB === */}
+                {/* === CHANGES TAB (formerly Value) === */}
                 {activeTab === 'value' && (
                     <div className="flex flex-col h-full">
+                        {/* P2 FIX: Legend explaining the semantics */}
+                        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 text-[10px] text-blue-700 dark:text-blue-300">
+                            <span className="font-semibold">Last instruction effect:</span>
+                            <span className="ml-1">🔴 = popped (consumed)</span>
+                            <span className="ml-2">🟢 = pushed (produced)</span>
+                            <span className="ml-2 text-blue-600 dark:text-blue-400 italic">
+                                {consumed.length === 0 && produced.length === 0 && '(no stack change - e.g., JUMP, SWAP)'}
+                                {consumed.length > 0 && produced.length === 0 && '(consumed only - e.g., JUMPI, POP)'}
+                                {consumed.length === 0 && produced.length > 0 && '(produced only - e.g., PUSH, DUP)'}
+                                {consumed.length > 0 && produced.length > 0 && '(replaced values - e.g., ADD, MUL)'}
+                            </span>
+                        </div>
                         {/* Header Row */}
                         <div className="grid grid-cols-[1fr_auto] bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 shrink-0">
-                            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Value</div>
+                            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                {consumed.length > 0 ? 'Consumed → Produced' : 'Produced'}
+                            </div>
                             <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center min-w-[100px]">PC: OP</div>
                         </div>
 
