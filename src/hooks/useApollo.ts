@@ -97,6 +97,9 @@ export const useApollo = () => {
     const [stackHistory, setStackHistory] = useState<StackItem[]>([]);
     const [dynamicTotalSteps, setDynamicTotalSteps] = useState<number>(0); // Initialize with 0
     const lastStepRef = useRef<number>(-1);
+    
+    // Track how many values were produced at each step (for proper backward navigation)
+    const producedCountRef = useRef<number[]>([]);
 
     // 8. Current log reference for extracting all data
     const currentLogRef = useRef<log_infos | null>(null);
@@ -174,6 +177,24 @@ export const useApollo = () => {
         }
 
         setPrevLogData(prevLog);
+
+        // Update stack history with PRODUCED values (what was pushed by the last instruction)
+        // This makes History show "all values that were added to the stack"
+        if (prevLog) {
+            const lastInstr = prevLog.next_instr;
+            const produced = extractProducedItems(lastInstr.stack_output, lastInstr.pc, lastInstr.op);
+            // Track count for backward navigation
+            producedCountRef.current[stepIndex - 1] = produced.length;
+            if (produced.length > 0) {
+                setStackHistory(prev => {
+                    const newHistory = [...prev, ...produced];
+                    if (newHistory.length > MAX_STACK_HISTORY) {
+                        return newHistory.slice(-MAX_STACK_HISTORY);
+                    }
+                    return newHistory;
+                });
+            }
+        }
 
         // Update dynamic total steps if we exceed current known max
         setDynamicTotalSteps(prev => {
@@ -286,6 +307,7 @@ export const useApollo = () => {
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
         executionPathRef.current = [];
         setExecutionPathVersion(0);
+        producedCountRef.current = [];
 
         try {
             if (typeof Apollo === 'undefined') {
@@ -411,9 +433,13 @@ export const useApollo = () => {
                 }
             } else {
                 // BACKWARD JUMP: truncate history to match current step
-                // We need to remove 'abs(diff)' items from the end
-                const stepsToRemove = Math.abs(diff);
-                setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - stepsToRemove)));
+                // Calculate total values to remove based on produced counts
+                let valuesToRemove = 0;
+                for (let i = 0; i < Math.abs(diff); i++) {
+                    const stepIdx = currentStep + i + 1;
+                    valuesToRemove += producedCountRef.current[stepIdx] || 0;
+                }
+                setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - valuesToRemove)));
             }
         } else if (diff === 1) {
             // Sequential Next
@@ -427,8 +453,9 @@ export const useApollo = () => {
                 });
             }
         } else if (diff === -1) {
-            // Sequential Prev
-            setStackHistory(prev => prev.slice(0, -1));
+            // Sequential Prev: remove the values produced by the instruction we're leaving
+            const countToRemove = producedCountRef.current[currentStep] || 1;
+            setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - countToRemove)));
         }
 
         lastStepRef.current = currentStep;
@@ -764,7 +791,7 @@ export const useApollo = () => {
         const set = new Set<number>();
         for (let i = 0; i < limit; i++) set.add(path[i]);
         return set;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [executionPathVersion, currentStepIndex]);
 
     // Derive execution counts from ref
@@ -777,7 +804,7 @@ export const useApollo = () => {
             counts.set(pc, (counts.get(pc) || 0) + 1);
         }
         return counts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [executionPathVersion, currentStepIndex]);
 
     return {
