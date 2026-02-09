@@ -233,9 +233,9 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                     <div>
                         {[...fullHistory].reverse().map((item, idx) => {
                             const isLatest = idx === 0;
-                            // Show real step number or fallback to index
+                            // Show real step number (clear display like #1, #2)
                             const stepLabel = item.stepNumber !== undefined 
-                                ? `Step ${item.stepNumber}` 
+                                ? `#${item.stepNumber}` 
                                 : `#${fullHistory.length - idx}`;
                             return (
                                 <AccordionItem

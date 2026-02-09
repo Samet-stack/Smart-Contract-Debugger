@@ -5,6 +5,7 @@ export interface StackItem {
     label?: string;
     status: StackItemStatus;
     modifiedAt?: { pc: number; opcode: string };
+    stepNumber?: number; // Step when this item was added to history
 }
 export interface MemorySegment {
     offset: number;
