@@ -426,13 +426,13 @@ export const useApollo = () => {
             // Calculate total values to remove based on produced counts
             let valuesToRemove = 0;
             for (let i = 0; i < Math.abs(diff); i++) {
-                const stepIdx = lastStepRef.current - i;
+                const stepIdx = lastStepRef.current - i - 1; // -1 because stored at stepIndex - 1
                 valuesToRemove += producedCountRef.current[stepIdx] || 0;
             }
             setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - valuesToRemove)));
         } else if (diff === -1) {
             // Sequential Prev: remove the values produced by the instruction we're leaving
-            const countToRemove = producedCountRef.current[lastStepRef.current] || 0;
+            const countToRemove = producedCountRef.current[lastStepRef.current - 1] || 0; // -1 because stored at stepIndex - 1
             setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - countToRemove)));
         }
 
