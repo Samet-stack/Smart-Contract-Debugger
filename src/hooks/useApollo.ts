@@ -98,9 +98,6 @@ export const useApollo = () => {
     const [dynamicTotalSteps, setDynamicTotalSteps] = useState<number>(0); // Initialize with 0
     const lastStepRef = useRef<number>(-1);
 
-    // Track how many values were produced at each step (for proper backward navigation)
-    const producedCountRef = useRef<number[]>([]);
-
     // 8. Current log reference for extracting all data
     const currentLogRef = useRef<log_infos | null>(null);
     const isProcessingRef = useRef(false);
@@ -181,14 +178,17 @@ export const useApollo = () => {
         // 10. Robust Stack History Management
         // We handle 3 cases: Sequential Next, Backward (Jump/Step), and Forward Jump
         const MAX_STACK_HISTORY = 200;
+        const previousStep = lastStepRef.current;
+        const isBackward = previousStep !== -1 && stepIndex < previousStep;
+        const isForward = previousStep === -1 || stepIndex > previousStep;
 
         // Handling Jumps/Backward:
-        if (stepIndex < lastStepRef.current) {
+        if (isBackward) {
             // BACKWARD: Filter out any items that belong to future steps
             // This is O(N) but N is small (200 items). 
             // We use the 'stepNumber' property we attach to items.
             setStackHistory(prev => prev.filter(item => (item.stepNumber ?? 0) <= stepIndex));
-        } else if (stepIndex > lastStepRef.current + 1) {
+        } else if (previousStep !== -1 && stepIndex > previousStep + 1) {
             // FORWARD JUMP (skipped steps): We cannot reconstruct history without replaying.
             // Safer to reset or keep existing? 
             // If we keep existing, we have a gap. 
@@ -203,7 +203,7 @@ export const useApollo = () => {
         // We always add the items produced by the *transition* that just happened (N-1 -> N).
         // prevLog represents the state at N-1.
         // prevLog.next_instr was executed to get us to N.
-        if (prevLog && stepIndex > 0) {
+        if (isForward && prevLog && stepIndex > 0) {
             const lastInstr = prevLog.next_instr;
             const produced = extractProducedItems(lastInstr.stack_output, lastInstr.pc, lastInstr.op);
 
@@ -214,9 +214,6 @@ export const useApollo = () => {
                 }));
 
                 setStackHistory(prev => {
-                    // Avoid duplicates if we are just refreshing the same step
-                    if (stepIndex === lastStepRef.current) return prev;
-
                     // Append new items
                     const newHistory = [...prev, ...producedWithStep];
                     if (newHistory.length > MAX_STACK_HISTORY) {
@@ -229,6 +226,9 @@ export const useApollo = () => {
             // Reset on step 0
             setStackHistory([]);
         }
+
+        // Update last processed step for correct forward/backward tracking.
+        lastStepRef.current = stepIndex;
 
         // Update dynamic total steps if we exceed current known max
         setDynamicTotalSteps(prev => {
@@ -341,7 +341,6 @@ export const useApollo = () => {
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
         executionPathRef.current = [];
         setExecutionPathVersion(0);
-        producedCountRef.current = [];
 
         try {
             if (typeof Apollo === 'undefined') {
