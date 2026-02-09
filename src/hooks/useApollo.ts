@@ -398,9 +398,8 @@ export const useApollo = () => {
 
         if (Math.abs(diff) > 1) {
             // JUMP DETECTED (Forward or Backward > 1 step)
-            // We cannot maintain continuous history. Preserve what we have on forward jumps,
-            // but reset on backward jumps to avoid showing future history.
             if (diff > 1) {
+                // Forward jump: append latest item
                 if (latestItem) {
                     setStackHistory(prev => {
                         const newHistory = [...prev, latestItem];
@@ -411,11 +410,10 @@ export const useApollo = () => {
                     });
                 }
             } else {
-                if (latestItem) {
-                    setStackHistory([latestItem]);
-                } else {
-                    setStackHistory([]);
-                }
+                // BACKWARD JUMP: truncate history to match current step
+                // We need to remove 'abs(diff)' items from the end
+                const stepsToRemove = Math.abs(diff);
+                setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - stepsToRemove)));
             }
         } else if (diff === 1) {
             // Sequential Next
