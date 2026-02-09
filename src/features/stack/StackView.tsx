@@ -232,12 +232,15 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                 {activeTab === 'history' && (
                     <div>
                         {[...fullHistory].reverse().map((item, idx) => {
-                            const stepNumber = fullHistory.length - idx;
                             const isLatest = idx === 0;
+                            // Show real step number or fallback to index
+                            const stepLabel = item.stepNumber !== undefined 
+                                ? `Step ${item.stepNumber}` 
+                                : `#${fullHistory.length - idx}`;
                             return (
                                 <AccordionItem
                                     key={idx}
-                                    label={`#${stepNumber}`}
+                                    label={stepLabel}
                                     value={item.value}
                                     detail={item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : undefined}
                                     isHighlighted={isLatest}

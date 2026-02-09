@@ -20,4 +20,7 @@ export interface StackItem {
     };
     // Flag to indicate a recently popped item (ghost)
     isPopped?: boolean;
+    
+    // Step number when this item was added to history
+    stepNumber?: number;
 }

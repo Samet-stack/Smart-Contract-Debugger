@@ -186,8 +186,13 @@ export const useApollo = () => {
             // Track count for backward navigation
             producedCountRef.current[stepIndex - 1] = produced.length;
             if (produced.length > 0) {
+                // Add step number to each produced item for display
+                const producedWithStep = produced.map(item => ({
+                    ...item,
+                    stepNumber: stepIndex  // The step when this value was produced
+                }));
                 setStackHistory(prev => {
-                    const newHistory = [...prev, ...produced];
+                    const newHistory = [...prev, ...producedWithStep];
                     if (newHistory.length > MAX_STACK_HISTORY) {
                         return newHistory.slice(-MAX_STACK_HISTORY);
                     }
@@ -395,71 +400,44 @@ export const useApollo = () => {
     }, [updateFromLog]);
 
 
-    // 10. Update stack history when step changes (limited to 200 items to prevent memory issues)
+    // 10. Update stack history for BACKWARD navigation only
+    // Forward navigation is handled in updateFromLog to avoid double incrementation
     const MAX_STACK_HISTORY = 200;
     useEffect(() => {
         const currentStep = state?.currentStep ?? -1;
-        const stackArr = state?.stack || [];
-        // Engine stack is top-first (index 0). Track the top value across steps.
-        const latestItem = stackArr[0];
 
         // Ensure we have a valid state step
         if (currentStep === -1 || lastStepRef.current === -1) {
-            if (currentStep !== -1) {
-                // Initialization or first load
-                if (latestItem) setStackHistory([latestItem]);
-                else setStackHistory([]);
-                lastStepRef.current = currentStep;
-            }
+            lastStepRef.current = currentStep;
             return;
         }
 
         const diff = currentStep - lastStepRef.current;
 
-        if (diff === 0) return; // No change
+        if (diff >= 0) {
+            // Forward: handled in updateFromLog, just update ref
+            lastStepRef.current = currentStep;
+            return;
+        }
 
+        // BACKWARD navigation: remove produced values
         if (Math.abs(diff) > 1) {
-            // JUMP DETECTED (Forward or Backward > 1 step)
-            if (diff > 1) {
-                // Forward jump: append latest item
-                if (latestItem) {
-                    setStackHistory(prev => {
-                        const newHistory = [...prev, latestItem];
-                        if (newHistory.length > MAX_STACK_HISTORY) {
-                            return newHistory.slice(-MAX_STACK_HISTORY);
-                        }
-                        return newHistory;
-                    });
-                }
-            } else {
-                // BACKWARD JUMP: truncate history to match current step
-                // Calculate total values to remove based on produced counts
-                let valuesToRemove = 0;
-                for (let i = 0; i < Math.abs(diff); i++) {
-                    const stepIdx = currentStep + i + 1;
-                    valuesToRemove += producedCountRef.current[stepIdx] || 0;
-                }
-                setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - valuesToRemove)));
+            // BACKWARD JUMP: truncate history to match current step
+            // Calculate total values to remove based on produced counts
+            let valuesToRemove = 0;
+            for (let i = 0; i < Math.abs(diff); i++) {
+                const stepIdx = lastStepRef.current - i;
+                valuesToRemove += producedCountRef.current[stepIdx] || 0;
             }
-        } else if (diff === 1) {
-            // Sequential Next
-            if (latestItem) {
-                setStackHistory(prev => {
-                    const newHistory = [...prev, latestItem];
-                    if (newHistory.length > MAX_STACK_HISTORY) {
-                        return newHistory.slice(-MAX_STACK_HISTORY);
-                    }
-                    return newHistory;
-                });
-            }
+            setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - valuesToRemove)));
         } else if (diff === -1) {
             // Sequential Prev: remove the values produced by the instruction we're leaving
-            const countToRemove = producedCountRef.current[currentStep] || 1;
+            const countToRemove = producedCountRef.current[lastStepRef.current] || 0;
             setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - countToRemove)));
         }
 
         lastStepRef.current = currentStep;
-    }, [state?.currentStep, state?.stack]);
+    }, [state?.currentStep]);
 
     // 11. Navigation Actions (supports stepping multiple instructions)
 
