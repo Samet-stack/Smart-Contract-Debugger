@@ -187,7 +187,7 @@ export const useApollo = () => {
             // BACKWARD: Filter out any items that belong to future steps
             // This is O(N) but N is small (200 items). 
             // We use the 'stepNumber' property we attach to items.
-            setStackHistory(prev => prev.filter(item => (item as any).stepNumber <= stepIndex));
+            setStackHistory(prev => prev.filter(item => (item.stepNumber ?? 0) <= stepIndex));
         } else if (stepIndex > lastStepRef.current + 1) {
             // FORWARD JUMP (skipped steps): We cannot reconstruct history without replaying.
             // Safer to reset or keep existing? 
@@ -431,42 +431,8 @@ export const useApollo = () => {
 
     // 10. Update stack history for BACKWARD navigation only
     // Forward navigation is handled in updateFromLog to avoid double incrementation
-    const MAX_STACK_HISTORY = 200;
-    useEffect(() => {
-        const currentStep = state?.currentStep ?? -1;
-
-        // Ensure we have a valid state step
-        if (currentStep === -1 || lastStepRef.current === -1) {
-            lastStepRef.current = currentStep;
-            return;
-        }
-
-        const diff = currentStep - lastStepRef.current;
-
-        if (diff >= 0) {
-            // Forward: handled in updateFromLog, just update ref
-            lastStepRef.current = currentStep;
-            return;
-        }
-
-        // BACKWARD navigation: remove produced values
-        if (Math.abs(diff) > 1) {
-            // BACKWARD JUMP: truncate history to match current step
-            // Calculate total values to remove based on produced counts
-            let valuesToRemove = 0;
-            for (let i = 0; i < Math.abs(diff); i++) {
-                const stepIdx = lastStepRef.current - i - 1; // -1 because stored at stepIndex - 1
-                valuesToRemove += producedCountRef.current[stepIdx] || 0;
-            }
-            setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - valuesToRemove)));
-        } else if (diff === -1) {
-            // Sequential Prev: remove the values produced by the instruction we're leaving
-            const countToRemove = producedCountRef.current[lastStepRef.current - 1] || 0; // -1 because stored at stepIndex - 1
-            setStackHistory(prev => prev.slice(0, Math.max(0, prev.length - countToRemove)));
-        }
-
-        lastStepRef.current = currentStep;
-    }, [state?.currentStep]);
+    // 10. Stack History is now handled synchronously in updateFromLog
+    // This ensures it is always in sync with the current step and handles backward/forward navigation correctly.
 
     // 11. Navigation Actions (supports stepping multiple instructions)
 
