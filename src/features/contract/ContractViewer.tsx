@@ -27,7 +27,7 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
         ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}`
         : "unknown";
 
-    // Single smooth scroll to keep active line centered — no jitter
+    // Smooth scroll with fallback for rapid navigation
     useEffect(() => {
         if (activeRef.current) {
             activeRef.current.scrollIntoView({
@@ -35,6 +35,19 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                 block: 'center',
                 inline: 'nearest'
             });
+            
+            // Fallback: ensure visibility after rapid navigation
+            const timeoutId = setTimeout(() => {
+                if (activeRef.current) {
+                    activeRef.current.scrollIntoView({
+                        behavior: 'auto',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }, 100);
+            
+            return () => clearTimeout(timeoutId);
         }
     }, [currentPc]);
 

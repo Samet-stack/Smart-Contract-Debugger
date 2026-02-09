@@ -103,8 +103,6 @@ export const useApollo = () => {
     const isProcessingRef = useRef(false);
 
     // 8.5. Previous instruction log - for LAST_RUN_INSTR and stack visualization
-    // We track previous log by storing the log from stepIndex - 1
-    const prevLogDataRef = useRef<log_infos | null>(null);
     const [prevLogData, setPrevLogData] = useState<log_infos | null>(null);
     const [nextInstruction, setNextInstruction] = useState<InstructionInfo | null>(null);
 
@@ -288,7 +286,6 @@ export const useApollo = () => {
         setDynamicTotalSteps(0); // Reset dynamic total steps on new load
         executionPathRef.current = [];
         setExecutionPathVersion(0);
-        prevLogDataRef.current = null;
 
         try {
             if (typeof Apollo === 'undefined') {
