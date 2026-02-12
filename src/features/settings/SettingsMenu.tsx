@@ -51,7 +51,7 @@ export default function SettingsMenu({ onSelect, onClose, className }: SettingsM
         <div
             ref={menuRef}
             className={cn(
-                "absolute right-0 top-full mt-2 w-56 rounded-xl border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900 z-50",
+                "absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-1rem)] rounded-xl border border-gray-100 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900 z-50",
                 className
             )}
         >

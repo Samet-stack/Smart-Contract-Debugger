@@ -65,7 +65,7 @@ export default function Modal({
                 aria-modal="true"
             >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-6 py-4">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 py-4">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                         {title}
                     </h3>
@@ -88,7 +88,7 @@ export default function Modal({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
                     {children}
                 </div>
             </div>

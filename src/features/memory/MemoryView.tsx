@@ -42,7 +42,7 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
                     {segments.map((segment) => (
                         <TableRow key={segment.offset}>
                             {/* Column 1: Memory Position (0, 32, 64...) */}
-                            <TableCell className="text-blue-500 dark:text-blue-400">
+                            <TableCell className="text-blue-500 dark:text-blue-400 whitespace-nowrap">
                                 {segment.offset}
                             </TableCell>
 
@@ -54,11 +54,11 @@ export default function MemoryView({ segments, className = "" }: MemoryViewProps
 
                             {/* Column 3: Instruction that modified this segment */}
                             {/* Displays Program Counter (PC) and Opcode (MSTORE, etc.) */}
-                            <TableCell className="text-green-600 dark:text-green-400">
+                            <TableCell className="text-green-600 dark:text-green-400 break-all">
                                 {segment.modifiedAt ? (
                                     <>
                                         <span className="mr-3 font-mono">{segment.modifiedAt.pc}</span>
-                                        {segment.modifiedAt.opcode}
+                                        <span className="break-all">{segment.modifiedAt.opcode}</span>
                                     </>
                                 ) : (
                                     <span className="text-gray-400">-</span>

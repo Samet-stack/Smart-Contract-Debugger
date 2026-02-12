@@ -143,14 +143,14 @@ export default function SettingsModals({ activeTab, onClose }: SettingsModalsPro
                 ) : (
                     <div className="space-y-2">
                         {aliases.map((alias) => (
-                            <div key={alias.id} className="flex items-center justify-between bg-white dark:bg-gray-900 p-3 rounded-lg border border-indigo-100 dark:border-gray-800 group hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm">
-                                <div className="flex flex-col gap-0.5">
+                            <div key={alias.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-900 p-3 rounded-lg border border-indigo-100 dark:border-gray-800 group hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm">
+                                <div className="flex flex-col gap-0.5 min-w-0">
                                     <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm">{alias.label}</span>
-                                    <span className={`font-mono text-[10px] tracking-wide ${getAddressColor(alias.address)}`}>{alias.address}</span>
+                                    <span className={`font-mono text-[10px] tracking-wide truncate ${getAddressColor(alias.address)}`}>{alias.address}</span>
                                 </div>
                                 <button
                                     onClick={() => removeAlias(alias.id)}
-                                    className="text-gray-300 hover:text-red-500 transition-colors p-2 opacity-0 group-hover:opacity-100"
+                                    className="text-gray-300 hover:text-red-500 transition-colors p-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
                                     title="Remove alias"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">

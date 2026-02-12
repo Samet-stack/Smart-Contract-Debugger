@@ -1,5 +1,4 @@
-
-import { useEffect, useRef } from "react";
+import { useRef, useEffect } from "react";
 import { cn } from "../../ui-lib/utils/cn";
 import type { ContractOpcode } from "../../hooks/useApollo";
 import { useAliases } from "../../context/AliasContext";
@@ -27,27 +26,13 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
         ? `${externalAddress.slice(0, 10)}...${externalAddress.slice(-8)}`
         : "unknown";
 
-    // Smooth scroll with fallback for rapid navigation
+    // Auto-scroll to active instruction
     useEffect(() => {
         if (activeRef.current) {
             activeRef.current.scrollIntoView({
                 behavior: 'smooth',
-                block: 'center',
-                inline: 'nearest'
+                block: 'nearest',
             });
-            
-            // Fallback: ensure visibility after rapid navigation
-            const timeoutId = setTimeout(() => {
-                if (activeRef.current) {
-                    activeRef.current.scrollIntoView({
-                        behavior: 'auto',
-                        block: 'center',
-                        inline: 'nearest'
-                    });
-                }
-            }, 100);
-            
-            return () => clearTimeout(timeoutId);
         }
     }, [currentPc]);
 
@@ -66,21 +51,19 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-w-0">
             {/* External Contract Banner */}
             {isExternalContract && (
-                <div className="bg-orange-100 dark:bg-orange-900/30 border-b border-orange-200 dark:border-orange-800 px-3 py-2 text-xs">
-                    <span className="text-orange-700 dark:text-orange-300 font-medium">
+                <div className="bg-orange-100 dark:bg-orange-900/30 border-b border-orange-200 dark:border-orange-800 px-3 py-2 text-xs flex flex-wrap items-center gap-1 min-w-0">
+                    <span className="text-orange-700 dark:text-orange-300 font-medium shrink-0">
                         ⚠️ External Call - Executing at:
                     </span>
-                    <span className="font-mono text-orange-600 dark:text-orange-400 ml-1">
+                    <span className="font-mono text-orange-600 dark:text-orange-400 break-all min-w-0">
                         {aliasLabel ? `${aliasLabel} (${shortAddress})` : shortAddress}
                     </span>
                 </div>
             )}
-            <div
-                className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed"
-            >
+            <div className="flex-1 overflow-auto rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950 p-2 font-mono text-xs leading-relaxed min-w-0">
                 <div className="space-y-0.5">
                     {code.map((op, index) => {
                         const isCurrentPc = currentPc === op.pc;
@@ -91,7 +74,7 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                                 key={index}
                                 ref={isCurrentPc ? activeRef : null}
                                 className={cn(
-                                    "flex items-center gap-3 px-2 py-1 rounded transition-colors duration-150",
+                                    "flex items-center gap-2 px-2 py-1 rounded transition-colors duration-150 min-w-0",
                                     isCurrentPc
                                         ? "bg-green-400 dark:bg-green-600/80 text-green-950 dark:text-green-50 font-semibold shadow-md"
                                         : isVisited
@@ -100,29 +83,31 @@ export default function ContractViewer({ code, currentPc, isExternalContract, ex
                                 )}
                             >
                                 <span className={cn(
-                                    "w-10 text-right font-mono text-[10px]",
+                                    "w-10 shrink-0 text-right font-mono text-[10px]",
                                     isCurrentPc ? "text-green-950 dark:text-green-100 font-bold" : isVisited ? "text-green-600 dark:text-green-400" : "opacity-60"
                                 )}>
                                     {op.pc}
                                 </span>
-                                <span className={cn(
-                                    "font-mono font-medium",
-                                    isCurrentPc ? "text-green-900 dark:text-green-50" : isVisited ? "text-green-700 dark:text-green-300" : "text-purple-600 dark:text-purple-400"
-                                )}>
-                                    {op.op}
-                                </span>
-                                {op.arg && (
+                                <div className="min-w-0 flex-1 flex items-center gap-2 overflow-hidden">
                                     <span className={cn(
-                                        "text-[10px] truncate max-w-[200px]",
-                                        isCurrentPc
-                                            ? "text-green-950 dark:text-green-100"
-                                            : "text-gray-500 dark:text-gray-400"
-                                    )} title={op.arg}>
-                                        {op.arg}
+                                        "font-mono font-medium shrink-0 max-w-[10rem] truncate",
+                                        isCurrentPc ? "text-green-900 dark:text-green-50" : isVisited ? "text-green-700 dark:text-green-300" : "text-purple-600 dark:text-purple-400"
+                                    )} title={op.op}>
+                                        {op.op}
                                     </span>
-                                )}
+                                    {op.arg && (
+                                        <span className={cn(
+                                            "text-[10px] min-w-0 flex-1 truncate",
+                                            isCurrentPc
+                                                ? "text-green-950 dark:text-green-100"
+                                                : "text-gray-500 dark:text-gray-400"
+                                        )} title={op.arg}>
+                                            {op.arg}
+                                        </span>
+                                    )}
+                                </div>
                                 {execCount > 1 && (
-                                    <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                                    <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
                                         ×{execCount}
                                     </span>
                                 )}

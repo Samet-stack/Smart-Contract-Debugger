@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef } from "react";
-import { cn } from "./ui-lib/utils/cn";
+import { useState, useCallback, useRef, useEffect } from "react";
+
+import { Panel, Group as PanelGroup, type PanelImperativeHandle } from "react-resizable-panels";
+import ResizeHandle from "./ui-lib/components/ResizeHandle";
 import Card from "./ui-lib/components/Card";
 import ExecutionPanel from "./features/execution/ExecutionPanel";
 import MemoryView from "./features/memory/MemoryView";
@@ -35,7 +37,7 @@ const METACALL_OPCODES = ["CALL", "STATICCALL", "DELEGATECALL", "CALLCODE", "CRE
  * Layout container that initializes `useApollo` and distributes state to child views.
  */
 export default function App() {
-  const [leftCollapsed, setLeftCollapsed] = useState(false); // Sidebar State
+
   const [isConsoleOpen, setIsConsoleOpen] = useState(false); // Console State
 
 
@@ -100,6 +102,27 @@ export default function App() {
 
   const [txHash, setTxHash] = useState("0xcae715cc39730aeaada34f4a405e92cb21a9d1820e7d48bee58d681fd515bae0"); // Default hash for demo
 
+  // Sidebar Ref for Collapse/Expand
+  const leftPanelRef = useRef<PanelImperativeHandle>(null);
+  const [isLeftCollapsed, setIsLeftCollapsed] = useState(false);
+  const [isCompactLayout, setIsCompactLayout] = useState(() => window.matchMedia("(max-width: 1279px)").matches);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1279px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsCompactLayout(event.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (isCompactLayout) {
+      leftPanelRef.current?.expand();
+    }
+  }, [isCompactLayout]);
+
   const handleLoad = () => {
     if (txHash) {
       loadTransaction(txHash);
@@ -132,7 +155,7 @@ export default function App() {
       // Spacebar toggles forward play by default
       if (isPlaying) togglePlay(isPlaying);
       else togglePlay("forward");
-    }
+    },
   });
 
   // --- ADAPTERS (To match existing UI Props) ---
@@ -144,9 +167,6 @@ export default function App() {
   const memorySegments: MemorySegment[] = memory;
 
   // TxInstrs Adapter (Dynamic from Hook)
-  // SEMANTIC FIX:
-  // - lastInstruction = what JUST EXECUTED (from previous step's next_instr)
-  // - nextInstruction = what's ABOUT TO EXECUTE (from current step's next_instr)
   const txInstrsData: TxInstrs = {
     // Gas data from hook
     ourGas: parseInt(gasUsed.main) || 0,
@@ -300,7 +320,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
+    <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300 flex flex-col overflow-x-hidden">
       {/* ========== HEADER ========== */}
       <Header
         txHash={txHash}
@@ -314,20 +334,20 @@ export default function App() {
       />
 
       {/* ========== MAIN CONTENT ========== */}
-      {/* 
-        Grid Layout:
-        - MD: 12 columns
-        - LG: 12 columns
-      */}
-      <main className="p-6">
-        <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-140px)]">
-          {/* ===== LEFT COLUMN (3/12 on LG, 4/12 on MD) ===== */}
-          <div className={cn(
-            "space-y-4 transition-all duration-300 relative",
-            leftCollapsed ? "hidden" : "col-span-12 md:col-span-4 lg:col-span-3"
-          )}>
-            <>
-              {/* Execution - Modern Panel */}
+      <main className="flex-1 overflow-visible relative">
+        <PanelGroup orientation={isCompactLayout ? "vertical" : "horizontal"} className="h-full">
+
+          {/* ===== LEFT COLUMN (Execution) ===== */}
+          <Panel
+            panelRef={leftPanelRef}
+            collapsible={!isCompactLayout}
+            onResize={(size) => setIsLeftCollapsed(size.inPixels === 0)}
+            defaultSize={isCompactLayout ? 34 : 25}
+            minSize={isCompactLayout ? 25 : 20}
+            collapsedSize={0}
+            className={isCompactLayout ? "flex flex-col p-3 pb-1 min-w-0 min-h-[300px]" : "flex flex-col p-4 pr-1 min-w-0"}
+          >
+            <div className="flex-1 flex flex-col gap-4 overflow-y-auto overflow-x-hidden h-full pr-1 pb-4">
               <ExecutionPanel
                 speed={speed}
                 onSpeedChange={setSpeed}
@@ -337,29 +357,20 @@ export default function App() {
                 onPrev={() => prev(stepSize)}
                 isPlaying={isPlaying}
                 onTogglePlay={togglePlay}
-                headerAction={(
+                headerAction={!isCompactLayout ? (
                   <button
                     type="button"
-                    onClick={() => setLeftCollapsed(true)}
-                    title="Collapse panels"
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-full border",
-                      "bg-white/90 text-gray-700 border-gray-200 shadow-sm",
-                      "hover:bg-white hover:text-gray-900 hover:border-gray-300",
-                      "dark:bg-gray-900/80 dark:text-gray-200 dark:border-gray-700 dark:hover:border-gray-600",
-                      "px-3 py-1.5 text-sm font-bold tracking-wide transition-all"
-                    )}
+                    onClick={() => leftPanelRef.current?.collapse()}
+                    title="Collapse sidebar"
+                    className="inline-flex items-center justify-center p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <span className="text-sm font-bold">{`<<`}</span>
+                    <span className="text-xs font-bold leading-none">{`<<`}</span>
                   </button>
-                )}
+                ) : undefined}
               />
 
-              {/* Filters */}
               <InstructionFilters filters={filters} onChange={handleFiltersChange} />
 
-
-              {/* Breakpoints */}
               <BreakpointManager
                 breakpoints={breakpoints}
                 addBreakpoint={addBreakpoint}
@@ -377,206 +388,204 @@ export default function App() {
                 skipContract={skipContract}
                 setSkipContract={setSkipContract}
               />
-            </>
-          </div>
+            </div>
+          </Panel>
 
+          <ResizeHandle direction={isCompactLayout ? "vertical" : "horizontal"} />
 
-          {/* ===== CENTER COLUMN (5/12 on LG, 8/12 on MD) ===== */}
-          <div className={cn(
-            "col-span-12 md:col-span-8 transition-all duration-300 relative",
-            leftCollapsed ? "lg:col-span-6 space-y-3" : "lg:col-span-5 space-y-4"
-          )}>
-            {/* Expand Button - Visible only when sidebar is collapsed */}
-            {leftCollapsed && (
-              <div className="flex items-center justify-start px-1">
+          {/* ===== CENTER COLUMN (Code & Instructions) ===== */}
+          <Panel
+            defaultSize={isCompactLayout ? 36 : 45}
+            minSize={isCompactLayout ? 30 : 30}
+            className={isCompactLayout ? "relative min-w-0 min-h-[420px]" : "relative min-w-0"}
+          >
+            {/* Overlay Expand Button - Positioned absolutely in the top-left of this panel */}
+            {!isCompactLayout && isLeftCollapsed && (
+              <div className="absolute top-6 left-6 z-50">
                 <button
                   type="button"
-                  onClick={() => setLeftCollapsed(false)}
-                  title="Expand panels"
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border",
-                    "bg-white/90 text-gray-700 border-gray-200 shadow-lg backdrop-blur",
-                    "hover:bg-white hover:text-gray-900 hover:border-gray-300",
-                    "dark:bg-gray-900/80 dark:text-gray-200 dark:border-gray-700 dark:hover:border-gray-600",
-                    "px-3.5 py-1.5 text-sm font-bold tracking-wide transition-all"
-                  )}
+                  onClick={() => leftPanelRef.current?.expand()}
+                  title="Expand sidebar"
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all"
                 >
-                  <span className="text-sm font-bold">{`>>`}</span>
+                  <span className="text-xs font-bold leading-none mt-[1px]">{`>>`}</span>
                 </button>
               </div>
             )}
 
-            {/* Side-by-Side Grid when collapsed: Execution Left | OpCodes Right */}
-            <div className="flex flex-col gap-4">
+            <PanelGroup orientation="vertical" className="h-full">
 
+              {/* Top: Contract Viewer */}
+              <Panel defaultSize={40} minSize={20} className="p-4 px-1 pb-1 min-h-[200px]">
+                <Card title="Contract & OpCodes" className="h-full" stickyHeader>
+                  <ContractViewer
+                    code={contractCode}
+                    currentPc={rawState?.nextInstruction?.pc}
+                    isExternalContract={isExternalContract}
+                    externalAddress={address}
+                    visitedPcs={visitedPcs}
+                    pcExecutionCount={pcExecutionCount}
+                  />
+                </Card>
+              </Panel>
 
-              {/* OpCodes (Right Cell in Grid, or Full Width if not collapsed) */}
-              <Card
-                title="Contract & OpCodes"
-                className={cn(
-                  "flex flex-col",
-                  leftCollapsed
-                    ? "h-[260px] overflow-hidden [&>div:first-child]:py-2 [&>div:first-child]:px-3 [&>div:last-child]:p-3"
-                    : "h-[350px]"
-                )}
-              >
-                <ContractViewer
-                  code={contractCode}
-                  currentPc={rawState?.nextInstruction?.pc}
-                  isExternalContract={isExternalContract}
-                  externalAddress={address}
-                  visitedPcs={visitedPcs}
-                  pcExecutionCount={pcExecutionCount}
-                />
-              </Card>
-            </div>
+              <ResizeHandle direction="vertical" />
 
-            <Card
-              title="Instructions"
-              className={cn(
-                "relative",
-                leftCollapsed && "h-[300px] overflow-hidden [&>div:first-child]:py-2 [&>div:first-child]:px-3 [&>div:last-child]:p-3 [&>div:last-child]:overflow-auto"
-              )}
-              headerEnd={
-                leftCollapsed && (
-                  <div className="flex items-center gap-2">
-                    {/* Left Group: Backwards */}
-                    <div className="inline-flex rounded-lg shadow-sm isolate">
-                      <button
-                        className={`relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-l-lg border transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
-                                ${isPlaying === 'backward'
-                            ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
-                          }`}
-                        onClick={() => togglePlay('backward')}
-                        title={isPlaying === 'backward' ? "Stop" : "Auto-Previous (P)"}
-                      >
-                        {/* Icons inline to avoid extra component imports */}
-                        {isPlaying === 'backward' ? (
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="12" rx="1" /></svg>
-                        ) : (
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" /></svg>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => prev(stepSize)}
-                        title="Previous Instruction"
-                        className="relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px text-slate-500 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                      </button>
+              {/* Middle: Instructions */}
+              <Panel defaultSize={40} minSize={20} className="p-1 px-1 min-h-[200px]">
+                <Card
+                  title="Instructions"
+                  className="h-full relative"
+                  headerEnd={(
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {/* Playback Controls (Always visible in this layout) */}
+                      <div className="inline-flex rounded-lg shadow-sm isolate">
+                        <button
+                          className={`relative inline-flex items-center justify-center px-2 py-1 rounded-l-lg border transition-all text-xs focus:z-10 focus:ring-2 active:scale-95
+                                  ${isPlaying === 'backward'
+                              ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
+                              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+                            }`}
+                          onClick={() => togglePlay('backward')}
+                          title={isPlaying === 'backward' ? "Stop" : "Auto-P"}
+                        >
+                          {/* Icon for Auto-Prev */}
+                          {isPlaying === 'backward' ? (
+                            <span className="font-bold">■</span> // Stop
+                          ) : (
+                            <span className="font-bold">◄</span> // Auto-Prev
+                          )}
+                        </button>
+                        <button
+                          onClick={() => prev(stepSize)}
+                          title="Previous"
+                          className="relative inline-flex items-center justify-center px-2 py-1 -ml-px text-xs text-slate-500 bg-white border border-slate-200 rounded-r-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
+                        >
+                          Prev
+                        </button>
+                      </div>
+
+                      <div className="inline-flex rounded-lg shadow-sm isolate">
+                        <button
+                          onClick={() => next(stepSize)}
+                          title="Next"
+                          className="relative inline-flex items-center justify-center px-2 py-1 text-xs text-slate-500 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400"
+                        >
+                          Next
+                        </button>
+                        <button
+                          className={`relative inline-flex items-center justify-center px-2 py-1 -ml-px border rounded-r-lg transition-all text-xs focus:z-10 focus:ring-2 active:scale-95
+                                  ${isPlaying === 'forward'
+                              ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
+                              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+                            }`}
+                          onClick={() => togglePlay('forward')}
+                          title={isPlaying === 'forward' ? "Stop" : "Auto-N"}
+                        >
+                          {/* Icon for Auto-Next */}
+                          {isPlaying === 'forward' ? (
+                            <span className="font-bold">■</span> // Stop
+                          ) : (
+                            <span className="font-bold">►</span> // Auto-Next
+                          )}
+                        </button>
+                      </div>
                     </div>
+                  )}
+                >
+                  {/* Scrollable Container for Instructions */}
+                  <div className="h-full overflow-y-auto pr-1">
+                    <TxInstrsView data={txInstrsData} className="" />
+                  </div>
+                </Card>
+              </Panel>
 
-                    {/* Right Group: Forwards */}
-                    <div className="inline-flex rounded-lg shadow-sm isolate">
-                      <button
-                        onClick={() => next(stepSize)}
-                        title="Next Instruction"
-                        className="relative inline-flex items-center justify-center px-2.5 py-1.5 text-slate-500 bg-white border border-slate-200 rounded-l-lg hover:bg-slate-50 hover:text-slate-700 focus:z-10 focus:ring-2 focus:ring-primary-500/50 active:scale-95 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-all duration-200"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                      </button>
-                      <button
-                        className={`relative inline-flex items-center justify-center px-2.5 py-1.5 -ml-px border rounded-r-lg transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
-                                ${isPlaying === 'forward'
-                            ? 'bg-red-500 text-white border-red-600 hover:bg-red-600 focus:ring-red-500/50 shadow-md z-10'
-                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-700 focus:ring-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
-                          }`}
-                        onClick={() => togglePlay('forward')}
-                        title={isPlaying === 'forward' ? "Stop" : "Auto-Next (N)"}
-                      >
-                        {isPlaying === 'forward' ? (
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><rect x="4" y="4" width="12" height="12" rx="1" /></svg>
-                        ) : (
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z" /></svg>
-                        )}
-                      </button>
+              <ResizeHandle direction="vertical" />
+
+              {/* Bottom: Call Context */}
+              <Panel defaultSize={20} minSize={10} className="p-4 px-1 pt-1 min-h-[100px]">
+                <Card title="Current Call Context" className="h-full">
+                  <CallContextView
+                    lastInstr={txInstrsData.lastRunInstr}
+                    nextInstr={txInstrsData.nextInstrToRun}
+                    showAliases={showAliases}
+                  />
+                </Card>
+              </Panel>
+
+            </PanelGroup>
+          </Panel>
+
+          <ResizeHandle direction={isCompactLayout ? "vertical" : "horizontal"} />
+
+          {/* ===== RIGHT COLUMN (Stack & Memory) ===== */}
+          <Panel
+            defaultSize={isCompactLayout ? 30 : 30}
+            minSize={isCompactLayout ? 25 : 20}
+            className={isCompactLayout ? "min-w-0 min-h-[320px]" : "min-w-0"}
+          >
+            <PanelGroup orientation="vertical" className="h-full">
+
+              {/* Top: Stack */}
+              <Panel defaultSize={40} minSize={20} className="p-4 pl-1 pb-1 min-h-[150px]">
+                <Card title="Stack" className="h-full">
+                  <StackView
+                    visibleStack={visibleStack}
+                    fullHistory={stackHistory}
+                    neutralItems={(() => {
+                      if (!stack || !Array.isArray(stack) || stack.length <= 1) return [];
+                      const producedCount = visibleStack?.produced?.length ?? 0;
+                      return stack.slice(producedCount).map((item, index) => ({
+                        ...item,
+                        label: item.label || `stack[${index + producedCount}]`,
+                        status: 'neutral' as const
+                      }));
+                    })()}
+                    className="h-full border-0 shadow-none"
+                  />
+                </Card>
+              </Panel>
+
+              <ResizeHandle direction="vertical" />
+
+              {/* Middle: Memory */}
+              <Panel defaultSize={40} minSize={20} className="p-1 pl-1 min-h-[150px]">
+                <Card title="Memory & Mappings" className="h-full overflow-hidden flex flex-col">
+                  <div className="flex-1 overflow-auto p-2 space-y-6">
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Segments</h4>
+                      <MemoryView segments={memorySegments} className="" />
+                    </div>
+                    <div className="border-t border-gray-100 dark:border-gray-800" />
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Mappings</h4>
+                      <MemoryMappingsView mappings={fullMemoryMappings} />
                     </div>
                   </div>
-                )
-              }
-            >
-              <TxInstrsView data={txInstrsData} className={leftCollapsed ? "space-y-4" : ""} />
-            </Card>
+                </Card>
+              </Panel>
 
-            {/* Call Context (Moved from Right to Center) */}
-            <Card
-              title="Current Call Context"
-              className={cn(
-                leftCollapsed && "h-[180px] overflow-hidden [&>div:first-child]:py-2 [&>div:first-child]:px-3 [&>div:last-child]:p-2 [&>div:last-child]:overflow-auto"
-              )}
-            >
-              {/* Show context for BOTH last and next instructions, to mirror the instructions view */}
-              <CallContextView
-                lastInstr={txInstrsData.lastRunInstr}
-                nextInstr={txInstrsData.nextInstrToRun}
-                showAliases={showAliases}
-              />
-            </Card>
+              <ResizeHandle direction="vertical" />
 
-
-
-          </div>
-
-          {/* ===== RIGHT COLUMN (4/12 on LG, 12/12 on MD) ===== */}
-          <div className={cn(
-            "col-span-12 md:col-span-12 space-y-4",
-            leftCollapsed ? "lg:col-span-6" : "lg:col-span-4"
-          )}>
-            {/* Stack */}
-            <Card title="Stack">
-              <StackView
-                visibleStack={visibleStack}
-                fullHistory={stackHistory}
-                neutralItems={(() => {
-                  if (!stack || !Array.isArray(stack) || stack.length <= 1) return [];
-                  // Just return the rest of the stack (everything after top)
-                  return stack.slice(1).map((item, index) => ({
-                    ...item,
-                    label: item.label || `stack[${index + 1}]`,
-                    status: 'neutral' as const
-                  }));
-                })()}
-                className="max-h-64"
-              />
-            </Card>
-
-            {/* Combined Memory & Mappings Card */}
-            <Card title="Memory & Mappings">
-              <div className="space-y-6">
-                {/* Memory View Section */}
-                <div>
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Segments</h4>
-                  <MemoryView segments={memorySegments} className="max-h-64" />
+              {/* Bottom: Storage */}
+              <Panel defaultSize={20} minSize={10} className="p-4 pl-1 pt-1 min-h-[100px]">
+                <div className="h-full flex flex-col gap-2 overflow-auto pb-4">
+                  <Card title="Storage" className="flex-1 min-h-[100px]">
+                    <StorageView items={storage} className="h-full border-0 shadow-none" />
+                  </Card>
+                  <Card title="Transient" className="flex-1 min-h-[100px]">
+                    <TransientStorageView items={transientStorage} className="h-full border-0 shadow-none" />
+                  </Card>
                 </div>
+              </Panel>
 
-                {/* Separator */}
-                <div className="border-t border-gray-100 dark:border-gray-800" />
+            </PanelGroup>
+          </Panel>
 
-                {/* Mappings Section - Full Memory Mappings (like old Apollo) */}
-                <div>
-                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Memory Mappings</h4>
-                  <MemoryMappingsView mappings={fullMemoryMappings} />
-                </div>
-              </div>
-            </Card>
-
-            {/* Transient Storage */}
-            <Card title="Transient Storage">
-              <TransientStorageView items={transientStorage} className="max-h-32" />
-            </Card>
-
-            {/* Storage */}
-            <Card title="Storage">
-              <StorageView items={storage} className="max-h-36" />
-            </Card>
-          </div>
-
-        </div>
-
+        </PanelGroup>
 
         {/* Footer Info */}
-        <div className="mt-6 text-center text-xs text-gray-600">
+        <div className="fixed bottom-0 left-0 w-full h-6 bg-gray-100 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 hidden sm:flex items-center justify-center text-[10px] text-gray-500 z-50 pointer-events-none">
           Shortcuts: Space Run / Pause • ←/→ Step • A/D Auto
         </div>
       </main>

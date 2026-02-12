@@ -80,19 +80,19 @@ export default function ExecutionPanel({
     };
 
     return (
-        <div className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm ${className}`}>
+        <div className={`rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm min-w-0 ${className}`}>
             {/* Header with Compact Controls */}
-            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex items-center bg-gray-50/50 dark:bg-gray-800/30 gap-4">
+            <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 flex flex-wrap items-center bg-gray-50/50 dark:bg-gray-800/30 gap-2 sm:gap-4 min-w-0">
                 <div className="flex items-center gap-2 shrink-0">
                     <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                     <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Execution</h3>
                 </div>
 
                 {/* Compact Control Group */}
-                <div className="flex items-center gap-3 ml-auto">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto sm:ml-auto min-w-0">
 
                     {/* Left Group: Backwards */}
-                    <div className="inline-flex rounded-lg shadow-sm isolate">
+                    <div className="inline-flex rounded-lg shadow-sm isolate shrink-0">
                         <Tooltip content={isPlaying === 'backward' ? "Stop" : "Auto-Previous"}>
                             <button
                                 className={`relative inline-flex items-center justify-center px-2.5 py-1.5 rounded-l-lg border transition-all duration-200 focus:z-10 focus:ring-2 active:scale-95
@@ -116,7 +116,7 @@ export default function ExecutionPanel({
                     </div>
 
                     {/* Right Group: Forwards */}
-                    <div className="inline-flex rounded-lg shadow-sm isolate">
+                    <div className="inline-flex rounded-lg shadow-sm isolate shrink-0">
                         <Tooltip content="Next Instruction">
                             <button
                                 onClick={HandleManuelNext}
@@ -138,16 +138,16 @@ export default function ExecutionPanel({
                             </button>
                         </Tooltip>
                     </div>
-                    {headerAction}
+                    {headerAction && <div className="shrink-0">{headerAction}</div>}
                 </div>
             </div>
 
             <div className="p-4 space-y-4">
                 {/* Row 2: Speed */}
-                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-2">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Execution Speed</span>
-                        <div className="flex items-center gap-2">
+                <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 space-y-2 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 min-w-0">Execution Speed</span>
+                        <div className="flex items-center gap-2 shrink-0">
                             <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{speed}</span>
                             <span className="text-xs text-gray-500">%</span>
                         </div>
@@ -164,11 +164,11 @@ export default function ExecutionPanel({
                                 background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${speed}%, #e5e7eb ${speed}%, #e5e7eb 100%)`,
                             }}
                         />
-                        <div className="flex justify-between mt-1.5">
-                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <div className="flex items-center justify-between gap-2 mt-1.5 min-w-0">
+                            <span className="text-[10px] text-gray-400 flex items-center gap-1 min-w-0">
                                 🐢 Slow
                             </span>
-                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                            <span className="text-[10px] text-gray-400 flex items-center gap-1 min-w-0">
                                 Fast 🚀
                             </span>
                         </div>
@@ -177,14 +177,14 @@ export default function ExecutionPanel({
 
                 {/* Row 3: Step Size */}
                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
                         <div>
                             <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Step Size</span>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Instructions per step</p>
                         </div>
 
                         {/* Styled Stepper Control */}
-                        <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-lg p-0.5 shadow-inner border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-0.5 bg-white dark:bg-gray-900 rounded-lg p-0.5 shadow-inner border border-gray-200 dark:border-gray-700 shrink-0">
                             <button
                                 onClick={() => onStepSizeChange(Math.max(1, stepSize - 1))}
                                 className="w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors font-bold text-sm"
@@ -208,7 +208,7 @@ export default function ExecutionPanel({
                     </div>
 
                     {/* Quick Presets */}
-                    <div className="flex gap-1.5 mt-3">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                         {[1, 5, 10, 50, 100].map((preset) => (
                             <button
                                 key={preset}

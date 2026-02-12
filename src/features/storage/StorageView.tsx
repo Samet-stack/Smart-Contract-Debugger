@@ -55,11 +55,11 @@ export default function StorageView({ items, className = "" }: StorageViewProps)
                             </TableCell>
 
                             {/* Modified At */}
-                            <TableCell className="text-green-600 dark:text-green-400 text-xs">
+                            <TableCell className="text-green-600 dark:text-green-400 text-xs break-all">
                                 {item.modifiedAt ? (
                                     <>
                                         <span className="font-mono mr-2">{item.modifiedAt.pc}</span>
-                                        <span className="text-gray-500 dark:text-gray-400">{item.modifiedAt.opcode}</span>
+                                        <span className="text-gray-500 dark:text-gray-400 break-all">{item.modifiedAt.opcode}</span>
                                     </>
                                 ) : (
                                     <span className="text-gray-400">-</span>

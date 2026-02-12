@@ -50,7 +50,7 @@ function AccordionItem({
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                     <span className={`text-xs font-mono font-medium ${labelColor} shrink-0`}>{label}</span>
-                    <code className="text-sm font-mono text-gray-800 dark:text-gray-200 truncate" title={value}>
+                    <code className="block min-w-0 flex-1 text-sm font-mono text-gray-800 dark:text-gray-200 truncate" title={value}>
                         {value}
                     </code>
                 </div>
@@ -71,7 +71,7 @@ function AccordionItem({
                         {detail && (
                             <div>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">PC: Opcode:</span>
-                                <span className="ml-2 text-xs font-mono text-gray-700 dark:text-gray-300">{detail}</span>
+                                <span className="ml-2 text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{detail}</span>
                             </div>
                         )}
                     </div>
@@ -118,23 +118,28 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
     return (
         <div className={`rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-900 ${className} flex flex-col h-full`}>
             {/* Tabs Header with tooltips */}
-            <div className="flex bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        title={tab.description}
-                        className={`flex-1 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 ${activeTab === tab.key
-                            ? 'text-brand-600 dark:text-brand-400 border-brand-500 bg-white dark:bg-gray-900'
-                            : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
-                            }`}
-                    >
-                        {tab.label}
-                        {tab.count !== undefined && (
-                            <span className="ml-1 text-[10px] opacity-70">({tab.count})</span>
-                        )}
-                    </button>
-                ))}
+            <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shrink-0 overflow-x-auto">
+                <div className="flex min-w-max">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            title={tab.description}
+                            className={`min-w-[116px] sm:min-w-0 sm:flex-1 px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 whitespace-nowrap ${activeTab === tab.key
+                                ? 'text-brand-600 dark:text-brand-400 border-brand-500 bg-white dark:bg-gray-900'
+                                : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                        >
+                            {tab.label}
+                            {tab.count !== undefined && (
+                                <>
+                                    <span className="ml-1 text-[10px] opacity-70 hidden sm:inline">({tab.count})</span>
+                                    <span className="ml-1 text-[10px] opacity-70 sm:hidden">{tab.count}</span>
+                                </>
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Tab Content */}
@@ -147,7 +152,7 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                             <span className="text-red-500">popped</span>
                             <span className="text-gray-400">/</span>
                             <span className="text-green-600 dark:text-green-400">pushed</span>
-                            <span className="text-blue-600 dark:text-blue-400 italic ml-auto">
+                            <span className="text-blue-600 dark:text-blue-400 italic w-full sm:w-auto sm:ml-auto">
                                 {consumed.length === 0 && produced.length === 0 && 'no stack change'}
                                 {consumed.length > 0 && produced.length === 0 && 'consumed only'}
                                 {consumed.length === 0 && produced.length > 0 && 'produced only'}
@@ -155,21 +160,22 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
                             </span>
                         </div>
                         {/* Header Row */}
-                        <div className="grid grid-cols-[1fr_auto] bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 shrink-0">
+                        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 shrink-0">
                             <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                                 {consumed.length > 0 ? 'Consumed → Produced' : 'Produced'}
                             </div>
-                            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center min-w-[100px]">PC: OP</div>
+                            <div className="hidden sm:block px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide text-center min-w-[100px]">PC: OP</div>
                         </div>
 
                         {/* Consumed items (Red) — all arguments the last instruction popped */}
                         {consumed.map((item, idx) => (
-                            <div key={`consumed-${idx}`} className="grid grid-cols-[1fr_auto] bg-red-100 dark:bg-red-900/40 border-b border-red-200 dark:border-red-800/50 shrink-0">
-                                <div className="px-4 py-3 min-w-0">
+                            <div key={`consumed-${idx}`} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] bg-red-100 dark:bg-red-900/40 border-b border-red-200 dark:border-red-800/50 shrink-0">
+                                <div className="px-3 sm:px-4 py-2 sm:py-3 min-w-0">
                                     <span className="text-red-600 dark:text-red-400 font-medium text-xs">{item.label || 'arg'}: </span>
-                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{item.value}</span>
+                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-xs sm:text-sm break-all">{item.value}</span>
                                 </div>
-                                <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm text-center min-w-[100px] flex items-center justify-center">
+                                <div className="px-3 sm:px-4 pb-2 sm:py-3 text-gray-500 dark:text-gray-400 text-xs sm:text-sm text-left sm:text-center min-w-[100px] flex items-center sm:justify-center break-all">
+                                    <span className="sm:hidden text-[10px] uppercase tracking-wide text-gray-400 mr-1">PC:OP</span>
                                     {item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : "-"}
                                 </div>
                             </div>
@@ -177,12 +183,13 @@ export default function StackView({ visibleStack, fullHistory = [], neutralItems
 
                         {/* Produced items (Green) — all values the last instruction pushed */}
                         {produced.map((item, idx) => (
-                            <div key={`produced-${idx}`} className="grid grid-cols-[1fr_auto] bg-green-100 dark:bg-green-900/40 border-b border-green-200 dark:border-green-800/50 shrink-0">
-                                <div className="px-4 py-3 min-w-0">
+                            <div key={`produced-${idx}`} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] bg-green-100 dark:bg-green-900/40 border-b border-green-200 dark:border-green-800/50 shrink-0">
+                                <div className="px-3 sm:px-4 py-2 sm:py-3 min-w-0">
                                     <span className="text-green-600 dark:text-green-400 font-medium text-xs">{item.label || 'result'}: </span>
-                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-sm break-all">{item.value}</span>
+                                    <span className="font-mono text-gray-800 dark:text-gray-200 text-xs sm:text-sm break-all">{item.value}</span>
                                 </div>
-                                <div className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm text-center min-w-[100px] flex items-center justify-center">
+                                <div className="px-3 sm:px-4 pb-2 sm:py-3 text-gray-500 dark:text-gray-400 text-xs sm:text-sm text-left sm:text-center min-w-[100px] flex items-center sm:justify-center break-all">
+                                    <span className="sm:hidden text-[10px] uppercase tracking-wide text-gray-400 mr-1">PC:OP</span>
                                     {item.modifiedAt ? `${item.modifiedAt.pc}: ${item.modifiedAt.opcode}` : "-"}
                                 </div>
                             </div>

@@ -3,10 +3,12 @@ import { useAliases } from "../../context/AliasContext";
 import type { InstructionInfo } from "../../types/TxInstrs";
 import Badge from "../../ui-lib/components/Badge";
 
+// ...
 interface CallContextViewProps {
     lastInstr: InstructionInfo | null;
     nextInstr: InstructionInfo | null;
     showAliases?: boolean;
+    className?: string;
 }
 
 // Helper to display a single context block
@@ -49,7 +51,7 @@ function ContextBlock({ instr, showAliases }: { instr: InstructionInfo | null, s
                 {/* Function Selector Badge */}
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-cyan-50 dark:bg-cyan-900/10 rounded border border-cyan-100 dark:border-cyan-800/30 flex-1 min-w-0">
                     <span className="text-[9px] uppercase font-bold text-gray-500 dark:text-gray-400 flex-shrink-0">Selector</span>
-                    <span className="font-mono text-[9px] text-cyan-600 dark:text-cyan-400 truncate">
+                    <span className="font-mono text-[9px] text-cyan-600 dark:text-cyan-400 truncate min-w-0" title={instr.functionSelector}>
                         {instr.functionSelector || <span className="text-gray-400 italic">0x...</span>}
                     </span>
                 </div>
@@ -97,12 +99,12 @@ function ContextBlock({ instr, showAliases }: { instr: InstructionInfo | null, s
  * the Last Run Instruction and the Next Instruction.
  * Supports expanding/collapsing raw call data.
  */
-export default function CallContextView({ lastInstr, nextInstr, showAliases = true }: CallContextViewProps) {
+export default function CallContextView({ lastInstr, nextInstr, showAliases = true, className = "" }: CallContextViewProps) {
     return (
-        <div className="p-2 relative">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={`p-2 relative h-full flex flex-col ${className}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
                 {/* Left Column: Last Instruction Context */}
-                <div className="min-w-0">
+                <div className="min-w-0 h-full">
                     <ContextBlock instr={lastInstr} showAliases={showAliases} />
                 </div>
 
@@ -110,7 +112,7 @@ export default function CallContextView({ lastInstr, nextInstr, showAliases = tr
                 <div className="hidden md:block absolute left-1/2 top-2 bottom-2 w-px bg-gray-100 dark:bg-gray-800 -translate-x-1/2" />
 
                 {/* Right Column: Next Instruction Context */}
-                <div className="min-w-0">
+                <div className="min-w-0 h-full">
                     <ContextBlock instr={nextInstr} showAliases={showAliases} />
                 </div>
             </div>

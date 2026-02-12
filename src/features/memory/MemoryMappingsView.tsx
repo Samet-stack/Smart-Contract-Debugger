@@ -20,7 +20,7 @@ export default function MemoryMappingsView({ mappings, className = "" }: MemoryM
         <div className={`mt-0 ${className}`}>
             <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {/* Headers */}
-                <div className="flex items-center justify-between px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-gray-500 uppercase tracking-wide">
+                <div className="hidden sm:flex items-center justify-between px-3 py-2 text-xs font-semibold bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-gray-500 uppercase tracking-wide">
                     <span className="w-1/3">Range</span>
                     <div className="flex items-center gap-8">
                         <span className="w-10 text-right">PC</span>
@@ -37,18 +37,26 @@ export default function MemoryMappingsView({ mappings, className = "" }: MemoryM
                     return (
                         <div
                             key={i}
-                            className={`flex items-center justify-between px-3 py-2 text-xs font-mono ${i % 2 === 0 ? 'bg-white dark:bg-gray-900/20' : 'bg-gray-50 dark:bg-gray-800/10'
+                            className={`px-3 py-2 text-xs font-mono ${i % 2 === 0 ? 'bg-white dark:bg-gray-900/20' : 'bg-gray-50 dark:bg-gray-800/10'
                                 }`}
                         >
-                            <div className="flex items-center gap-4 w-1/3">
-                                <span className={`font-bold ${colorClass}`}>{m.range}</span>
-                                <span className="text-gray-400">→</span>
-                            </div>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                                    <span className={`font-bold ${colorClass} break-all sm:break-normal`}>{m.range}</span>
+                                    <span className="text-gray-400 hidden sm:inline">→</span>
+                                </div>
 
-                            <div className="flex items-center gap-8">
-                                <span className="text-gray-600 dark:text-gray-400 font-mono w-10 text-right">{m.pc}</span>
-                                <div className="w-20 flex justify-end">
-                                    <Badge color="info" size="sm" className="w-full justify-center">{m.opcode}</Badge>
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-8">
+                                    <div className="sm:w-10">
+                                        <span className="block sm:hidden text-[10px] uppercase tracking-wide text-gray-400 mb-1">PC</span>
+                                        <span className="text-gray-600 dark:text-gray-400 font-mono block sm:text-right">{m.pc}</span>
+                                    </div>
+                                    <div className="sm:w-20">
+                                        <span className="block sm:hidden text-[10px] uppercase tracking-wide text-gray-400 mb-1">Opcode</span>
+                                        <div className="w-full sm:flex sm:justify-end">
+                                            <Badge color="info" size="sm" className="w-full justify-center">{m.opcode}</Badge>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
