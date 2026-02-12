@@ -379,7 +379,7 @@ export default function App() {
                     type="button"
                     onClick={() => leftPanelRef.current?.collapse()}
                     title="Collapse sidebar"
-                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-sm text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-300 hover:scale-110 active:scale-95"
                   >
                     <IconSidebarClose className="w-5 h-5" />
                   </button>
@@ -429,7 +429,7 @@ export default function App() {
                       type="button"
                       onClick={() => leftPanelRef.current?.expand()}
                       title="Expand sidebar"
-                      className="flex items-center justify-center p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-sm text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-300 hover:scale-110 active:scale-95"
                     >
                       <IconSidebarOpen className="w-5 h-5" />
                     </button>
