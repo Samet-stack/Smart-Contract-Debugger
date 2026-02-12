@@ -32,6 +32,23 @@ import TransientStorageView from "./features/storage/TransientStorageView";
 // CALL-type opcodes for Metacall breakpoint
 const METACALL_OPCODES = ["CALL", "STATICCALL", "DELEGATECALL", "CALLCODE", "CREATE", "CREATE2"];
 
+// --- ICONS ---
+// Chevron Left (Collapse)
+const IconSidebarClose = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="m11 17-5-5 5-5" />
+    <path d="m18 17-5-5 5-5" />
+  </svg>
+);
+
+// Chevron Right (Expand)
+const IconSidebarOpen = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="m6 17 5-5-5-5" />
+    <path d="m13 17 5-5-5-5" />
+  </svg>
+);
+
 /**
  * Main App Component.
  * Layout container that initializes `useApollo` and distributes state to child views.
@@ -362,9 +379,9 @@ export default function App() {
                     type="button"
                     onClick={() => leftPanelRef.current?.collapse()}
                     title="Collapse sidebar"
-                    className="inline-flex items-center justify-center p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                    className="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
                   >
-                    <span className="text-xs font-bold leading-none">{`<<`}</span>
+                    <IconSidebarClose className="w-5 h-5" />
                   </button>
                 ) : undefined}
               />
@@ -399,25 +416,25 @@ export default function App() {
             minSize={isCompactLayout ? 30 : 30}
             className={isCompactLayout ? "relative min-w-0 min-h-[420px]" : "relative min-w-0"}
           >
-            {/* Overlay Expand Button - Positioned absolutely in the top-left of this panel */}
-            {!isCompactLayout && isLeftCollapsed && (
-              <div className="absolute top-6 left-6 z-50">
-                <button
-                  type="button"
-                  onClick={() => leftPanelRef.current?.expand()}
-                  title="Expand sidebar"
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all"
-                >
-                  <span className="text-xs font-bold leading-none mt-[1px]">{`>>`}</span>
-                </button>
-              </div>
-            )}
-
             <PanelGroup orientation="vertical" className="h-full">
 
               {/* Top: Contract Viewer */}
               <Panel defaultSize={40} minSize={20} className="p-4 px-1 pb-1 min-h-[200px]">
-                <Card title="Contract & OpCodes" className="h-full" stickyHeader>
+                <Card
+                  title="Contract & OpCodes"
+                  className="h-full"
+                  stickyHeader
+                  headerStart={(!isCompactLayout && isLeftCollapsed) ? (
+                    <button
+                      type="button"
+                      onClick={() => leftPanelRef.current?.expand()}
+                      title="Expand sidebar"
+                      className="flex items-center justify-center p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <IconSidebarOpen className="w-5 h-5" />
+                    </button>
+                  ) : undefined}
+                >
                   <ContractViewer
                     code={contractCode}
                     currentPc={rawState?.nextInstruction?.pc}
@@ -527,7 +544,7 @@ export default function App() {
             <PanelGroup orientation="vertical" className="h-full">
 
               {/* Top: Stack */}
-              <Panel defaultSize={40} minSize={20} className="p-4 pl-1 pb-1 min-h-[150px]">
+              <Panel defaultSize={30} minSize={20} className="p-4 pl-1 pb-1 min-h-[150px]">
                 <Card title="Stack" className="h-full">
                   <StackView
                     visibleStack={visibleStack}
@@ -549,7 +566,7 @@ export default function App() {
               <ResizeHandle direction="vertical" />
 
               {/* Middle: Memory */}
-              <Panel defaultSize={40} minSize={20} className="p-1 pl-1 min-h-[150px]">
+              <Panel defaultSize={35} minSize={20} className="p-1 pl-1 min-h-[150px]">
                 <Card title="Memory & Mappings" className="h-full overflow-hidden flex flex-col">
                   <div className="flex-1 overflow-auto p-2 space-y-6">
                     <div>
@@ -568,7 +585,7 @@ export default function App() {
               <ResizeHandle direction="vertical" />
 
               {/* Bottom: Storage */}
-              <Panel defaultSize={20} minSize={10} className="p-4 pl-1 pt-1 min-h-[100px]">
+              <Panel defaultSize={35} minSize={20} className="p-4 pl-1 pt-1 min-h-[100px]">
                 <div className="h-full flex flex-col gap-2 overflow-auto pb-4">
                   <Card title="Storage" className="flex-1 min-h-[100px]">
                     <StorageView items={storage} className="h-full border-0 shadow-none" />
@@ -588,12 +605,12 @@ export default function App() {
         <div className="fixed bottom-0 left-0 w-full h-6 bg-gray-100 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 hidden sm:flex items-center justify-center text-[10px] text-gray-500 z-50 pointer-events-none">
           Shortcuts: Space Run / Pause • ←/→ Step • A/D Auto
         </div>
-      </main>
+      </main >
 
       <ConsoleModal
         isOpen={isConsoleOpen}
         onClose={() => setIsConsoleOpen(false)}
       />
-    </div>
+    </div >
   );
 }

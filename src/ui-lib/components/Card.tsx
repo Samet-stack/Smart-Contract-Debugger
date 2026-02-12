@@ -5,7 +5,8 @@ interface CardProps {
     title: string;
     children: ReactNode;
     className?: string;
-    headerEnd?: ReactNode; // Renamed to match usage
+    headerStart?: ReactNode; // New prop for left-side actions
+    headerEnd?: ReactNode;
     stickyHeader?: boolean;
 }
 
@@ -14,7 +15,7 @@ interface CardProps {
  * Used for wrapping feature sections (like Stack, Memory, Instructions).
  * Can define a title and an optional header action (headerEnd).
  */
-export default function Card({ title, children, className = "", headerEnd, stickyHeader = false }: CardProps) {
+export default function Card({ title, children, className = "", headerStart, headerEnd, stickyHeader = false }: CardProps) {
     return (
         <div
             className={cn(
@@ -26,6 +27,7 @@ export default function Card({ title, children, className = "", headerEnd, stick
                 "px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex flex-wrap items-center gap-2",
                 stickyHeader && "sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm"
             )}>
+                {headerStart && <div className="flex-shrink-0 mr-2">{headerStart}</div>}
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-0">{title}</h3>
                 {headerEnd && <div className="w-full sm:w-auto sm:ml-auto overflow-x-auto">{headerEnd}</div>}
             </div>
