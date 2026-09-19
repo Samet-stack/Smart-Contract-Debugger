@@ -22,4 +22,4 @@ Le build est disponible dans le dossier `dist/`.
 make run-local
 ```
 
-Ouvre ensuite http://localhost:5173/ dans ton navigateur.
+Ouvre ensuite x dans ton navigateur.
